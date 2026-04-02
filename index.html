@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Artemis II — Mission Tracker</title>
+<style>
+/* ============================================================
+   GLOBAL THEME
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #0a0a0f;
+  --bg-panel:    #0d0d14;
+  --bg-strip:    #12121a;
+  --text:        #c8c8d0;
+  --text-bright: #f0f0f5;
+  --accent:      #007fff;
+  --accent-glow: rgba(0, 127, 255, 0.25);
+  --lime:        #39ff14;
+  --lime-glow:   rgba(57, 255, 20, 0.25);
+  --chip-bg:     rgba(10, 10, 15, 0.6);
+  --purple:      #bb86fc;
+  --purple-glow: rgba(187, 134, 252, 0.25);
+  --chip-border: rgba(255, 255, 255, 0.08);
+  --font-sans:   -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:   'Courier New', Courier, monospace;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.4;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  animation: fadeIn 300ms ease forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+/* ============================================================
+   MOBILE STAGE STRIP  (< 900px)
+   ============================================================ */
+.stage-strip {
+  display: flex;
+  align-items: center;
+  background: var(--bg-strip);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  height: 44px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.strip-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.3em;
+  cursor: pointer;
+  transition: color 150ms, background 150ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.strip-arrow:hover, .strip-arrow:active {
+  color: var(--text-bright);
+  background: rgba(255,255,255,0.05);
+}
+
+.strip-scroll {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  gap: 2px;
+}
+.strip-scroll::-webkit-scrollbar { display: none; }
+
+.strip-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(200, 200, 208, 0.5);
+  font-family: var(--font-sans);
+  font-size: 0.78em;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background 150ms;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.strip-tab:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.03);
+}
+.strip-tab.active {
+  color: var(--text-bright);
+  border-bottom-color: var(--accent);
+}
+.strip-tab.past {
+  color: rgba(200, 200, 208, 0.4);
+}
+.strip-tab.future {
+  color: rgba(200, 200, 208, 0.6);
+}
+.strip-tab.milestone {
+  color: rgba(57, 255, 20, 0.6);
+}
+.strip-tab.milestone.active {
+  color: var(--lime);
+  border-bottom-color: var(--lime);
+}
+
+/* Live indicator dot */
+.live-dot {
+  display: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lime);
+  flex-shrink: 0;
+}
+.strip-tab.live .live-dot,
+.sidebar-tab.live .live-dot {
+  display: inline-block;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.live-badge {
+  display: none;
+  font-size: 0.6em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--lime);
+  text-transform: uppercase;
+}
+.strip-tab.live .live-badge,
+.sidebar-tab.live .live-badge {
+  display: inline;
+}
+
+/* ============================================================
+   DESKTOP SIDEBAR  (>= 900px)
+   ============================================================ */
+.sidebar {
+  display: none;
+  flex-direction: column;
+  width: clamp(160px, 13vw, 240px);
+  min-width: 160px;
+  background: var(--bg-panel);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 20px 16px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.mission-title {
+  font-size: 1.15em;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text-bright);
+}
+.mission-subtitle {
+  font-size: 0.8em;
+  color: var(--accent);
+  font-style: italic;
+  margin-top: 2px;
+}
+.mission-badge {
+  font-size: 1.4em;
+  display: inline-block;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.sidebar-tabs {
+  flex: 1;
+  padding: 8px 0;
+  overflow-y: auto;
+}
+
+.sidebar-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.82em;
+  text-align: left;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background 150ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.sidebar-tab:hover {
+  background: rgba(255,255,255,0.03);
+  color: var(--text-bright);
+}
+.sidebar-tab.active {
+  color: var(--text-bright);
+  border-left-color: var(--accent);
+  background: rgba(0, 127, 255, 0.06);
+}
+.sidebar-tab.milestone {
+  color: rgba(57, 255, 20, 0.7);
+}
+.sidebar-tab.milestone.active {
+  color: var(--lime);
+  border-left-color: var(--lime);
+  background: rgba(57, 255, 20, 0.06);
+}
+.sidebar-tab.past {
+  color: rgba(200, 200, 208, 0.45);
+}
+
+.sidebar-crew {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.7em;
+  color: rgba(200, 200, 208, 0.5);
+  line-height: 1.6;
+}
+.sidebar-crew strong {
+  color: rgba(200, 200, 208, 0.7);
+  font-weight: 600;
+}
+
+.sidebar-disclaimer {
+  padding: 8px 16px 12px;
+  font-size: 0.6em;
+  color: rgba(200, 200, 208, 0.3);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   MAIN CONTENT AREA
+   ============================================================ */
+.content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Visualization container */
+.viz-container {
+  position: relative;
+  height: clamp(50vh, 60vh, 70vh);
+  flex-shrink: 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+#vizCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* HUD Overlays */
+.hud {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+}
+.hud--top-left {
+  top: 12px;
+  left: 12px;
+}
+.hud--bottom-left {
+  bottom: 12px;
+  left: 12px;
+}
+.hud--bottom-right {
+  bottom: 12px;
+  right: 12px;
+}
+
+.hud-chip {
+  background: var(--chip-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--chip-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+}
+
+.hud-title {
+  font-size: 1.2em;
+  font-weight: 700;
+  color: var(--text-bright);
+  line-height: 1.2;
+  margin: 0;
+}
+.hud-flight-day {
+  font-size: 0.75em;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.hud-timer {
+  font-family: var(--font-mono);
+  font-size: 1.3em;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.03em;
+}
+.hud-timer-label {
+  font-size: 0.6em;
+  color: rgba(200, 200, 208, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 2px;
+}
+
+.hud-stat {
+  font-size: 0.78em;
+  color: var(--text);
+  line-height: 1.5;
+}
+.hud-stat-value {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ============================================================
+   ACCORDION DETAILS PANEL
+   ============================================================ */
+.details-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 12px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.details-panel::-webkit-scrollbar { width: 4px; }
+.details-panel::-webkit-scrollbar-track { background: transparent; }
+.details-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.accordion {
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.accordion summary {
+  padding: 10px 4px;
+  font-size: 0.82em;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: color 150ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.accordion summary:hover {
+  color: var(--text-bright);
+}
+.accordion summary::-webkit-details-marker { display: none; }
+.accordion summary::after {
+  content: '+';
+  font-size: 1.1em;
+  color: rgba(200, 200, 208, 0.4);
+  transition: transform 200ms;
+}
+.accordion[open] summary::after {
+  content: '−';
+}
+.accordion-body {
+  padding: 0 4px 12px 12px;
+  font-size: 0.8em;
+  color: rgba(200, 200, 208, 0.7);
+  line-height: 1.6;
+  border-left: 2px solid var(--accent);
+  margin-left: 4px;
+}
+.accordion-body ul {
+  padding-left: 16px;
+}
+.accordion-body li {
+  margin-bottom: 4px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+.stat-card {
+  background: rgba(0, 127, 255, 0.08);
+  border-left: 2px solid var(--accent);
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+.stat-card-label {
+  font-size: 0.8em;
+  color: rgba(200, 200, 208, 0.5);
+}
+.stat-card-value {
+  font-size: 0.95em;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ============================================================
+   MOBILE BRANDING BAR
+   ============================================================ */
+.mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+}
+.mobile-brand-badge {
+  font-size: 1.1em;
+  color: var(--text);
+}
+.mobile-brand-title {
+  font-size: 0.8em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-bright);
+}
+.mobile-brand-sub {
+  font-size: 0.65em;
+  color: var(--accent);
+  font-style: italic;
+}
+
+/* ============================================================
+   WATCH BUTTONS
+   ============================================================ */
+.watch-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.watch-btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  font-family: var(--font-sans);
+  border-radius: 14px;
+  transition: background 150ms, color 150ms;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+.watch-btn--primary {
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.68em;
+  font-weight: 600;
+  padding: 5px 12px;
+  min-height: 28px;
+}
+.watch-btn--primary:hover {
+  background: #1a8fff;
+}
+.watch-btn--secondary {
+  color: var(--accent);
+  font-size: 0.6em;
+  padding: 4px 8px;
+  border: 1px solid rgba(0, 127, 255, 0.3);
+}
+.watch-btn--secondary:hover {
+  background: rgba(0, 127, 255, 0.1);
+}
+
+/* ============================================================
+   MOBILE LIVE TAB CHIP
+   ============================================================ */
+.strip-tab.live {
+  background: rgba(57, 255, 20, 0.08);
+  color: var(--lime);
+}
+
+/* ============================================================
+   MOBILE DISCLAIMER
+   ============================================================ */
+.mobile-disclaimer {
+  padding: 12px 4px 8px;
+  font-size: 0.6em;
+  color: rgba(200, 200, 208, 0.3);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   CONTENT TRANSITION ON TAB SWITCH
+   ============================================================ */
+.hud-chip,
+.details-panel {
+  transition: opacity 150ms ease;
+}
+
+/* ============================================================
+   MISSION ELAPSED TIME (secondary line)
+   ============================================================ */
+.hud-timer-mission {
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  color: rgba(200, 200, 208, 0.45);
+  margin-top: 2px;
+}
+
+/* ============================================================
+   SHORT VIEWPORT RULE (< 600px height)
+   ============================================================ */
+@media (max-height: 599px) {
+  .viz-container { height: 45vh; }
+  .hud-chip { font-size: 0.85em; padding: 6px 10px; }
+  .hud-title { font-size: 1em; }
+  .hud-timer { font-size: 1.1em; }
+  .accordion summary { font-size: 0.78em; padding: 8px 4px; }
+  .stage-strip { height: 36px; }
+  .strip-tab { font-size: 0.7em; padding: 4px 8px; }
+  .strip-arrow { width: 36px; height: 36px; min-width: 36px; font-size: 1.1em; }
+  .mobile-brand { padding: 3px 10px; }
+  .mobile-brand-title { font-size: 0.7em; }
+  .mobile-brand-sub { font-size: 0.55em; }
+}
+
+/* ============================================================
+   DESKTOP LAYOUT (>= 900px)
+   ============================================================ */
+@media (min-width: 900px) {
+  .app {
+    flex-direction: row;
+  }
+  .mobile-brand {
+    display: none;
+  }
+  .stage-strip {
+    display: none;
+  }
+  .mobile-disclaimer {
+    display: none;
+  }
+  .sidebar {
+    display: flex;
+  }
+  .content {
+    flex: 1;
+  }
+  .viz-container {
+    height: clamp(55vh, 65vh, 75vh);
+  }
+  .hud--top-left { top: 16px; left: 16px; }
+  .hud--bottom-left { bottom: 16px; left: 16px; }
+  .hud--bottom-right { bottom: 16px; right: 16px; }
+  .details-panel { padding: 10px 20px 24px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ========== MOBILE BRANDING ========== -->
+  <div class="mobile-brand">
+    <span class="mobile-brand-badge">&#9789;</span>
+    <span class="mobile-brand-title">ARTEMIS II</span>
+    <span class="mobile-brand-sub">INTEGRITY</span>
+    <div class="watch-btns">
+      <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=m3kR2KK8TEs" target="_blank" rel="noopener">&#9654; NASA Live</a>
+      <a class="watch-btn watch-btn--secondary" href="https://www.youtube.com/@NASA/streams" target="_blank" rel="noopener">Streams &#8599;</a>
+    </div>
+  </div>
+
+  <!-- ========== MOBILE STAGE STRIP ========== -->
+  <nav class="stage-strip" aria-label="Mission stages">
+    <button class="strip-arrow strip-arrow--left" aria-label="Scroll to previous stages">&#8249;</button>
+    <div class="strip-scroll" id="stripScroll"></div>
+    <button class="strip-arrow strip-arrow--right" aria-label="Scroll to next stages">&#8250;</button>
+  </nav>
+
+  <!-- ========== DESKTOP SIDEBAR ========== -->
+  <nav class="sidebar" aria-label="Mission stages">
+    <div class="sidebar-header">
+      <div class="mission-title"><span class="mission-badge">&#9789;</span>ARTEMIS II</div>
+      <div class="mission-subtitle">INTEGRITY</div>
+      <div class="watch-btns" style="margin-top:10px">
+        <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=m3kR2KK8TEs" target="_blank" rel="noopener">&#9654; NASA Live</a>
+        <a class="watch-btn watch-btn--secondary" href="https://www.youtube.com/@NASA/streams" target="_blank" rel="noopener">NASA Streams &#8599;</a>
+      </div>
+    </div>
+    <div class="sidebar-tabs" id="sidebarTabs"></div>
+    <div class="sidebar-crew">
+      <strong>Crew</strong><br>
+      Reid Wiseman &mdash; Commander<br>
+      Victor Glover &mdash; Pilot<br>
+      Christina Koch &mdash; Mission Specialist<br>
+      Jeremy Hansen &mdash; Mission Specialist (CSA)
+    </div>
+    <div class="sidebar-disclaimer">
+      Approximate mission data &middot; Updated as mission progresses<br>
+      Source: NASA Artemis II
+    </div>
+  </nav>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="content">
+    <div class="viz-container">
+      <canvas id="vizCanvas"></canvas>
+
+      <div class="hud hud--top-left">
+        <div class="hud-chip">
+          <h1 class="hud-title" id="hudTitle">—</h1>
+          <div class="hud-flight-day" id="hudFlightDay">—</div>
+        </div>
+      </div>
+
+      <div class="hud hud--bottom-left">
+        <div class="hud-chip">
+          <div class="hud-timer-label" id="hudTimerLabel">Mission Elapsed Time</div>
+          <div class="hud-timer" id="hudTimer">T+ 00:00:00:00</div>
+          <div class="hud-timer-mission" id="hudTimerMission">Mission: T+ 00:00:00:00</div>
+        </div>
+      </div>
+
+      <div class="hud hud--bottom-right">
+        <div class="hud-chip" id="hudStats">
+          <div class="hud-stat">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="details-panel" id="detailsPanel">
+      <details class="accordion" id="accDescription">
+        <summary>Stage Description</summary>
+        <div class="accordion-body" id="accDescriptionBody">—</div>
+      </details>
+      <details class="accordion" id="accActivities">
+        <summary>Crew Activities</summary>
+        <div class="accordion-body" id="accActivitiesBody">—</div>
+      </details>
+      <details class="accordion" id="accTechnical">
+        <summary>Technical Details</summary>
+        <div class="accordion-body" id="accTechnicalBody">—</div>
+      </details>
+      <div class="mobile-disclaimer">
+        Approximate mission data &middot; Updated as mission progresses &middot; Source: NASA Artemis II
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+/* ============================================================
+   MISSION TIMING CONFIGURATION
+   ============================================================
+   T0 = exact liftoff time (confirmed by NASA live blog).
+   All MET values in seconds from T0.
+
+   TO UPDATE: Change T0 if launch time shifts. Change any
+   MET_* constant if NASA revises a stage time. Everything
+   else derives automatically.
+   ============================================================ */
+
+// T+0: April 1, 2026, 6:35:12 PM EDT — confirmed actual liftoff
+const T0 = new Date('2026-04-01T18:35:12-04:00');
+
+// --- Helper: D/HH:MM:SS → total seconds ---
+function met(d, h, m, s) { return d * 86400 + h * 3600 + m * 60 + s; }
+
+// ===== STAGE BOUNDARIES (MET seconds) =====
+// Sources: Live blog actuals (ascent), April 1 PDF (post-ascent)
+
+const MET_LAUNCH_START           = met(0,  0,  0,  0);   // 0/00:00:00  Liftoff
+const MET_ICPS_BURNS_START       = met(0,  0, 50,  0);   // 0/00:50:00  PRM
+const MET_PROX_OPS_START         = met(0,  3, 23,  0);   // 0/03:23:00  Orion/ICPS separation
+const MET_HEO_CHECKOUTS_START    = met(0, 13, 30,  0);   // 0/13:30:00  Orion PRB (approx)
+const MET_TLI_START              = met(1,  1,  8, 42);   // 1/01:08:42  TLI burn
+const MET_OUTBOUND_START         = met(1,  6,  0,  0);   // ~1/06:00:00 Post-TLI coast begins
+const MET_LUNAR_FLYBY_START      = met(5,  0, 29, 59);   // 5/00:29:59  Lunar close approach
+const MET_RETURN_COAST_START     = met(5, 18, 53,  0);   // 5/18:53:00  Lunar SOI exit
+const MET_CM_SM_SEP_START        = met(9,  1,  9,  0);   // 9/01:09:00  CM/SM separation
+const MET_REENTRY_START          = met(9,  1, 29,  0);   // 9/01:29:00  Entry interface
+const MET_SPLASHDOWN_START       = met(9,  1, 42, 48);   // 9/01:42:48  Splashdown
+const MET_MISSION_END            = met(9,  2,  1,  0);   // 9/02:01:00  Orion final power down
+
+// ===== ASCENT TICK MARKS (live blog actuals) =====
+const TICK_TOWER_CLEAR  = met(0, 0, 0,  7);
+const TICK_SUPERSONIC   = met(0, 0, 0, 56);
+const TICK_MAX_Q        = met(0, 0, 1, 12);
+const TICK_SRB_SEP      = met(0, 0, 2,  9);
+const TICK_LAS_JETTISON = met(0, 0, 3, 13);
+const TICK_MECO         = met(0, 0, 8,  2);
+const TICK_CORE_SEP     = met(0, 0, 8, 14);
+
+// ===== ICPS BURNS TICKS (April 1 PDF) =====
+const TICK_PRM          = met(0, 0, 50, 0);
+const TICK_ARB_TIG      = met(0, 1, 47, 0);
+
+// ===== EARTH-MOON TRAJECTORY TICKS (April 1 PDF) =====
+const TICK_TLI          = met(1,  1,  8, 42);
+const TICK_OTC1         = met(2,  1,  8, 42);
+const TICK_OTC2         = met(3,  1,  8, 42);
+const TICK_OTC3         = met(4,  4, 29, 52);
+const TICK_LUNAR_SOI    = met(4,  6, 38,  0);
+const TICK_CLOSEST      = met(5,  0, 29, 59);
+const TICK_MAX_EARTH    = met(5,  0, 35,  0);
+const TICK_SOI_EXIT     = met(5, 18, 53,  0);
+const TICK_RTC1         = met(6,  1, 29, 52);
+const TICK_RTC2         = met(8,  4, 29, 10);
+const TICK_RTC3         = met(8, 20, 29, 10);
+const TICK_CM_SM_SEP    = met(9,  1,  9,  0);
+const TICK_ENTRY_IF     = met(9,  1, 29,  0);
+const TICK_SPLASHDOWN   = met(9,  1, 42, 48);
+
+
+/* ============================================================
+   STAGE DATA MODEL
+   ============================================================ */
+const STAGES = [
+  {
+    id: 'launch',
+    name: 'Launch',
+    title: 'Launch & Ascent',
+    flightDay: 'Flight Day 1',
+    metSeconds: MET_LAUNCH_START,
+    metEndSeconds: MET_ICPS_BURNS_START,
+    description: 'SLS lifted off from Kennedy Space Center\'s Launch Complex 39B at 6:35 PM EDT, generating 8.8 million pounds of thrust. Twin solid rocket boosters and four RS-25 engines propelled the 5.75-million-pound rocket through the atmosphere, achieving orbit insertion in just over 8 minutes.',
+    activities: [
+      'Solid rocket booster separation at T+2:09',
+      'Launch abort system jettison at T+3:13',
+      'Core stage main engine cutoff at T+8:02',
+      'Core stage separation from ICPS at T+8:14',
+      'Solar array wings deployment (~18 min after launch)'
+    ],
+
+    isKeyMilestone: false,
+    keyStats: [
+      { label: 'Thrust at Liftoff', value: '8.8M lbs' },
+      { label: 'Vehicle Weight', value: '5.75M lbs' }
+    ],
+    orbitParams: {
+      perigeeKm: 185,
+      apogeeKm: 185,
+      periodMin: 90,
+      isTransitional: true
+    },
+
+    ticks: [
+      { metSeconds: TICK_TOWER_CLEAR,  label: 'Tower Clear', t: 0.01 },
+      { metSeconds: TICK_SUPERSONIC,    label: 'Supersonic',  t: 0.02 },
+      { metSeconds: TICK_MAX_Q,         label: 'Max Q',       t: 0.025 },
+      { metSeconds: TICK_SRB_SEP,       label: 'SRB Sep',     t: 0.04 },
+      { metSeconds: TICK_LAS_JETTISON,  label: 'LAS Jettison',t: 0.06 },
+      { metSeconds: TICK_MECO,          label: 'MECO',        t: 0.16 },
+      { metSeconds: TICK_CORE_SEP,      label: 'Core Sep',    t: 0.165 }
+    ]
+  },
+  {
+    id: 'icps-burns',
+    name: 'ICPS Burns',
+    title: 'ICPS Orbit-Raising Burns',
+    flightDay: 'Flight Day 1',
+    metSeconds: MET_ICPS_BURNS_START,
+    metEndSeconds: MET_PROX_OPS_START,
+    description: 'The Interim Cryogenic Propulsion Stage performs two critical burns: the Perigee Raise Maneuver (PRM) and the Apogee Raise Burn (ARB). These raise Orion from its initial low orbit into a high elliptical Earth orbit with an apogee of ~43,500 miles.',
+    activities: [
+      'ICPS Perigee Raise Maneuver (PRM) at T+50 min',
+      'ICPS Apogee Raise Burn (ARB) at T+1h 47m',
+      'Orbit raised to ~1,381 × 43,500 miles'
+    ],
+
+    isKeyMilestone: false,
+    keyStats: [
+      { label: 'Perigee', value: '~100 mi' },
+      { label: 'Apogee', value: '~43,500 mi' }
+    ],
+    orbitParams: {
+      perigeeKm: 185,
+      apogeeKm: 70000,
+      periodMin: 720,
+      isTransitional: true
+    },
+
+    ticks: [
+      { metSeconds: TICK_PRM,     label: 'PRM',     t: 0.0 },
+      { metSeconds: TICK_ARB_TIG, label: 'ARB TIG', t: 0.55 }
+    ]
+  },
+  {
+    id: 'prox-ops',
+    name: 'Prox Ops',
+    title: 'Proximity Operations Demo',
+    flightDay: 'Flight Day 1',
+    metSeconds: MET_PROX_OPS_START,
+    metEndSeconds: MET_HEO_CHECKOUTS_START,
+    description: 'Orion separates from the ICPS upper stage, then the crew manually pilots the spacecraft to approach, station-keep, and back away — testing future docking capabilities using cameras and windows. The ICPS is later disposed.',
+    activities: [
+      'Orion/ICPS spring separation at T+3h 23m',
+      'Manual approach and station-keeping near ICPS',
+      'Proximity operations conclude at ~T+4h 35m',
+      'ICPS disposal burn at T+5h 02m',
+      'CubeSat deployments begin at ~T+5h 04m'
+    ],
+
+    isKeyMilestone: false,
+    keyStats: [
+      { label: 'Orbit Type', value: 'High Elliptical' },
+      { label: 'Purpose', value: 'Docking capability test' }
+    ],
+    orbitParams: {
+      perigeeKm: 185,
+      apogeeKm: 70000,
+      periodMin: 720,
+      isTransitional: false
+    },
+
+    ticks: []
+  },
+  {
+    id: 'heo-checkouts',
+    name: 'HEO Checkouts',
+    title: 'High-Earth Orbit Checkouts',
+    flightDay: 'Flight Day 1–2',
+    metSeconds: MET_HEO_CHECKOUTS_START,
+    metEndSeconds: MET_TLI_START,
+    description: 'Over approximately 17 hours in high Earth orbit, the crew verifies life support systems (air, water, CO₂ removal), communications, navigation, and radiation monitoring. Includes first meals, exercise, sleep periods, and Deep Space Network comm tests before TLI.',
+    activities: [
+      'ECLSS checkouts: air, water, CO₂ removal, toilet',
+      'Deep Space Network emergency comms test',
+      'Crew sleep period (~4–4.5 hours split)',
+      'Pre-TLI geometry burn (Orion PRB)',
+      'Optical navigation checkout',
+      'Final preparations for Trans-Lunar Injection'
+    ],
+
+    isKeyMilestone: false,
+    keyStats: [
+      { label: 'Duration', value: '~17 hours' },
+      { label: 'Orbit', value: '100 × 43,500 mi' }
+    ],
+    orbitParams: {
+      perigeeKm: 185,
+      apogeeKm: 70000,
+      periodMin: 720,
+      isTransitional: false
+    },
+
+    ticks: []
+  },
+  {
+    id: 'tli',
+    name: 'TLI Burn',
+    title: 'Trans-Lunar Injection',
+    flightDay: 'Flight Day 2',
+    metSeconds: MET_TLI_START,
+    metEndSeconds: MET_OUTBOUND_START,
+    description: 'The European Service Module\'s main engine fires for approximately 5–6 minutes, accelerating Orion to escape Earth orbit and setting the free-return trajectory toward the Moon. This is the last major engine firing of the Artemis II mission.',
+    activities: [
+      'Christina Koch prepares ESM main engine burn',
+      'TLI burn: ~5–6 minutes',
+      'Orion escapes Earth orbit onto lunar free-return trajectory',
+      'Post-TLI adaptation; lighter schedule',
+      'First video communication with ground teams'
+    ],
+
+    isKeyMilestone: true,
+    keyStats: [
+      { label: 'Burn Duration', value: '~5–6 min' },
+      { label: 'Trajectory', value: 'Free-return' }
+    ],
+    orbitParams: null,
+
+    ticks: [
+      { metSeconds: TICK_TLI, label: 'TLI', t: 0.0 }
+    ]
+  },
+  {
+    id: 'outbound-coast',
+    name: 'Outbound Coast',
+    title: 'Outbound Coast & Corrections',
+    flightDay: 'Flight Days 2–5',
+    metSeconds: MET_OUTBOUND_START,
+    metEndSeconds: MET_LUNAR_FLYBY_START,
+    description: 'A ~4-day coast toward the Moon with three outbound trajectory correction burns to refine the path. The crew conducts medical demonstrations, suit checks, media events, lunar observation rehearsals, and enters the lunar sphere of influence on Flight Day 5.',
+    activities: [
+      'OTC-1: first outbound correction (Flight Day 3)',
+      'CPR demonstration in microgravity',
+      'Medical kit checkout (thermometer, BP, stethoscope)',
+      'DSN emergency communications test',
+      'OTC-2: second outbound correction (Flight Day 4)',
+      'Lunar geography target review and celestial photography',
+      'OTC-3: final outbound correction (Flight Day 5)',
+      'Spacesuit donning, pressurization, and function tests',
+      'Entry into lunar sphere of influence'
+    ],
+
+    isKeyMilestone: false,
+    keyStats: [
+      { label: 'Duration', value: '~4 days' },
+      { label: 'Corrections', value: '3 burns (OTC 1-3)' }
+    ],
+    orbitParams: null,
+
+    ticks: [
+      { metSeconds: TICK_OTC1,       label: 'OTC-1',     t: 0.13 },
+      { metSeconds: TICK_OTC2,       label: 'OTC-2',     t: 0.25 },
+      { metSeconds: TICK_OTC3,       label: 'OTC-3',     t: 0.40 },
+      { metSeconds: TICK_LUNAR_SOI,  label: 'Lunar SOI',  t: 0.42 }
+    ]
+  },
+  {
+    id: 'lunar-flyby',
+    name: 'Lunar Flyby',
+    title: 'Lunar Flyby & Closest Approach',
+    flightDay: 'Flight Day 6',
+    metSeconds: MET_LUNAR_FLYBY_START,
+    metEndSeconds: MET_RETURN_COAST_START,
+    description: 'Orion flies within 4,000–6,500 miles of the Moon\'s far side — the farthest humans have ever traveled from Earth at 250,000+ miles. The crew photographs lunar geological features, observes Earthrise, and experiences 30–50 minutes of radio blackout behind the Moon.',
+    activities: [
+      'Lunar close approach: ~4,000–6,500 mi from surface',
+      'Maximum Earth distance: 250,000+ mi',
+      '30–50 minute communications blackout behind Moon',
+      'Lunar surface photography and video',
+      'Real-time geological observations',
+      'Earthrise observation and documentation'
+    ],
+
+    isKeyMilestone: true,
+    keyStats: [
+      { label: 'Closest Approach', value: '~4,000–6,500 mi' },
+      { label: 'Distance from Earth', value: '250,000+ mi' }
+    ],
+    orbitParams: null,
+
+    ticks: [
+      { metSeconds: TICK_CLOSEST,   label: 'Closest',        t: 0.50 },
+      { metSeconds: TICK_MAX_EARTH, label: 'Max Earth Dist',  t: 0.50 }
+    ]
+  },
+  {
+    id: 'return-coast',
+    name: 'Return Coast',
+    title: 'Return Coast & Corrections',
+    flightDay: 'Flight Days 7–10',
+    metSeconds: MET_RETURN_COAST_START,
+    metEndSeconds: MET_CM_SM_SEP_START,
+    description: 'A ~4-day return journey with three correction burns. The crew builds a radiation shelter demonstration, performs manual piloting tests, conducts reentry preparation, physiological studies, and garment assessments for post-landing orthostatic intolerance.',
+    activities: [
+      'Lunar SOI exit (Flight Day 7 morning)',
+      'Scientists debrief crew on lunar observations',
+      'RTC-1: first return correction (Flight Day 7)',
+      'Radiation shelter construction demo (Flight Day 8)',
+      'Manual piloting demonstrations (Flight Day 8)',
+      'RTC-2: second return correction (Flight Day 9)',
+      'Orthostatic intolerance garment assessments',
+      'Reentry and splashdown procedure study',
+      'RTC-3: final return correction (Flight Day 10)',
+      'Entry checklist and spacesuit donning begins'
+    ],
+
+    isKeyMilestone: false,
+    keyStats: [
+      { label: 'Duration', value: '~4 days' },
+      { label: 'Corrections', value: '3 burns (RTC 1-3)' }
+    ],
+    orbitParams: null,
+
+    ticks: [
+      { metSeconds: TICK_SOI_EXIT, label: 'SOI Exit', t: 0.58 },
+      { metSeconds: TICK_RTC1,     label: 'RTC-1',    t: 0.62 },
+      { metSeconds: TICK_RTC2,     label: 'RTC-2',    t: 0.88 },
+      { metSeconds: TICK_RTC3,     label: 'RTC-3',    t: 0.96 }
+    ]
+  },
+  {
+    id: 'cm-sm-sep',
+    name: 'CM/SM Sep',
+    title: 'Crew Module / Service Module Separation',
+    flightDay: 'Flight Day 10',
+    metSeconds: MET_CM_SM_SEP_START,
+    metEndSeconds: MET_REENTRY_START,
+    description: 'Approximately 20 minutes before reentry, the Orion Crew Module separates from the European Service Module, which is disposed of. A final small burn adjusts the reentry angle for precise atmospheric entry.',
+    activities: [
+      'CM/SM separation at MET 9/01:09:00',
+      'Service module disposal',
+      'Crew module raise burn to adjust reentry angle',
+      'Final attitude alignment for entry interface'
+    ],
+
+    isKeyMilestone: false,
+    keyStats: [
+      { label: 'Time to Entry', value: '~20 min' },
+      { label: 'Event', value: 'SM disposal' }
+    ],
+    orbitParams: null,
+
+    ticks: [
+      { metSeconds: TICK_CM_SM_SEP, label: 'CM/SM Sep', t: 0.95 }
+    ]
+  },
+  {
+    id: 'reentry',
+    name: 'Reentry',
+    title: 'Atmospheric Reentry',
+    flightDay: 'Flight Day 10',
+    metSeconds: MET_REENTRY_START,
+    metEndSeconds: MET_SPLASHDOWN_START,
+    description: 'Orion\'s Crew Module enters Earth\'s atmosphere at approximately 25,000 mph. The heat shield endures temperatures of ~5,000°F during roughly 10 minutes of plasma blackout before parachute deployment slows the capsule for splashdown.',
+    activities: [
+      'Entry interface at ~400,000 ft altitude',
+      'Heat shield temperatures reach ~5,000°F (2,760°C)',
+      '~10 minutes of plasma communications blackout',
+      'Forward bay cover jettison',
+      'Drogue parachutes deploy (~25,000 ft)',
+      'Main parachutes deploy (~9,500 ft)'
+    ],
+
+    isKeyMilestone: false,
+    keyStats: [
+      { label: 'Entry Speed', value: '~25,000 mph' },
+      { label: 'Heat Shield', value: '~5,000°F' }
+    ],
+    orbitParams: null,
+
+    ticks: [
+      { metSeconds: TICK_ENTRY_IF, label: 'Entry Interface', t: 0.97 }
+    ]
+  },
+  {
+    id: 'splashdown',
+    name: 'Splashdown',
+    title: 'Splashdown & Recovery',
+    flightDay: 'Flight Day 10',
+    metSeconds: MET_SPLASHDOWN_START,
+    metEndSeconds: MET_MISSION_END,
+    description: 'Orion splashes down in the Pacific Ocean off San Diego, California at approximately 17 mph under three main parachutes. U.S. Navy recovery teams retrieve the crew and capsule, completing the first crewed Artemis mission.',
+    activities: [
+      'Splashdown in Pacific Ocean off San Diego, CA',
+      'Landing speed: ~17 mph under 3 main parachutes',
+      'U.S. Navy recovery teams retrieve crew and capsule',
+      'Crew module RCS safing',
+      'Orion final power down'
+    ],
+
+    isKeyMilestone: true,
+    keyStats: [
+      { label: 'Landing Speed', value: '~17 mph' },
+      { label: 'Location', value: 'Pacific Ocean, San Diego' }
+    ],
+    orbitParams: null,
+
+    ticks: [
+      { metSeconds: TICK_SPLASHDOWN, label: 'Splashdown', t: 1.0 }
+    ]
+  }
+];
+
+
+/* ============================================================
+   VISUALIZATION ENGINE (Phase 2)
+   ============================================================ */
+
+// --- Canvas setup ---
+const canvas = document.getElementById('vizCanvas');
+const ctx = canvas.getContext('2d');
+let canvasW = 0, canvasH = 0; // logical (CSS) pixels
+let dpr = 1;
+let missionPathCache = null;     // declared early so resizeCanvas can reference it
+let currentScene = null;         // declared early so resizeCanvas can reference it
+
+function resizeCanvas() {
+  const container = canvas.parentElement;
+  const rect = container.getBoundingClientRect();
+  dpr = window.devicePixelRatio || 1;
+  canvasW = rect.width;
+  canvasH = rect.height;
+  canvas.width = canvasW * dpr;
+  canvas.height = canvasH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Invalidate path cache on resize
+  missionPathCache = null;
+}
+
+// --- Seeded PRNG for stable starfield ---
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// --- Starfield ---
+const STAR_COUNT = 200;
+const TWINKLE_COUNT = 15;
+let stars = [];
+
+function generateStars() {
+  const rng = mulberry32(42);
+  stars = [];
+  for (let i = 0; i < STAR_COUNT; i++) {
+    stars.push({
+      x: rng(),          // 0-1 normalized
+      y: rng(),
+      size: 0.5 + rng() * 1.5,
+      baseBrightness: 0.3 + rng() * 0.7,
+      brightness: 0,
+      twinkle: i < TWINKLE_COUNT,
+      twinkleRate: 0.0005 + rng() * 0.002,
+      twinkleOffset: rng() * Math.PI * 2
+    });
+  }
+}
+generateStars();
+
+function updateStarfield(timestamp) {
+  for (const star of stars) {
+    if (star.twinkle) {
+      star.brightness = star.baseBrightness *
+        (0.6 + 0.4 * Math.sin(timestamp * star.twinkleRate + star.twinkleOffset));
+    } else {
+      star.brightness = star.baseBrightness;
+    }
+  }
+}
+
+function drawStarfield() {
+  for (const star of stars) {
+    ctx.globalAlpha = star.brightness;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(star.x * canvasW, star.y * canvasH, star.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// --- Earth rendering ---
+function drawEarth(cx, cy, radius) {
+  // Atmospheric glow
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius + 4, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(79, 195, 247, 0.15)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.restore();
+
+  // Earth body
+  const grad = ctx.createRadialGradient(cx - radius * 0.2, cy - radius * 0.2, radius * 0.1, cx, cy, radius);
+  grad.addColorStop(0, '#2196f3');
+  grad.addColorStop(0.4, '#1a6fc4');
+  grad.addColorStop(0.85, '#0d3b6e');
+  grad.addColorStop(1, '#082040');
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Subtle continental hints (simplified landmasses as lighter patches)
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = '#4caf50';
+  // Americas-ish
+  ctx.beginPath();
+  ctx.ellipse(cx - radius * 0.25, cy - radius * 0.1, radius * 0.15, radius * 0.35, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  // Africa/Europe-ish
+  ctx.beginPath();
+  ctx.ellipse(cx + radius * 0.15, cy - radius * 0.05, radius * 0.12, radius * 0.3, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // KSC dot (~28.5°N, on the left-center of visible face)
+  const kscAngle = -Math.PI * 0.16; // roughly 28.5° N latitude
+  const kscX = cx + radius * 0.7 * Math.cos(kscAngle - 0.8);
+  const kscY = cy + radius * 0.7 * Math.sin(kscAngle - 0.8);
+  ctx.beginPath();
+  ctx.arc(kscX, kscY, 2, 0, Math.PI * 2);
+  ctx.fillStyle = '#39ff14';
+  ctx.fill();
+  // KSC label
+  ctx.font = `${Math.max(8, canvasH * 0.018)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
+  ctx.fillStyle = 'rgba(57, 255, 20, 0.6)';
+  ctx.fillText('KSC', kscX + 5, kscY + 3);
+
+  // "Earth" label below
+  ctx.font = `${Math.max(9, canvasH * 0.022)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
+  ctx.fillStyle = 'rgba(200, 200, 208, 0.35)';
+  ctx.textAlign = 'center';
+  ctx.fillText('Earth', cx, cy + radius + 18);
+  ctx.textAlign = 'start';
+}
+
+// --- Moon rendering ---
+function drawMoon(cx, cy, radius) {
+  // Moon body
+  const grad = ctx.createRadialGradient(cx - radius * 0.25, cy - radius * 0.25, radius * 0.1, cx, cy, radius);
+  grad.addColorStop(0, '#d4d4d4');
+  grad.addColorStop(0.5, '#c0c0c0');
+  grad.addColorStop(1, '#808080');
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Craters
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = '#666666';
+  ctx.beginPath();
+  ctx.arc(cx + radius * 0.25, cy - radius * 0.2, radius * 0.18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx - radius * 0.3, cy + radius * 0.15, radius * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + radius * 0.1, cy + radius * 0.35, radius * 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // "Moon" label
+  ctx.font = `${Math.max(9, canvasH * 0.022)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
+  ctx.fillStyle = 'rgba(200, 200, 208, 0.35)';
+  ctx.textAlign = 'center';
+  ctx.fillText('Moon', cx, cy + radius + 16);
+  ctx.textAlign = 'start';
+}
+
+// --- Unified portrait layout ---
+function getUnifiedLayout() {
+  return {
+    earthCx: canvasW * 0.50,       // centered on vertical axis
+    earthCy: canvasH * 0.15,       // upper area
+    earthR:  canvasH * 0.075,      // slightly smaller for more room
+    moonCx:  canvasW * 0.50,       // centered on same axis
+    moonCy:  canvasH * 0.82,       // lower area
+    moonR:   canvasH * 0.028       // Moon radius
+  };
+}
+
+// ============================================================
+// MISSION MILESTONES — single source of truth for path positions
+// ============================================================
+const MISSION_MILESTONES = [
+  { met: MET_LAUNCH_START,        u: 0.000, label: 'Liftoff',    showLabel: 'never' },
+  { met: TICK_CORE_SEP,           u: 0.005, label: 'Core Sep',   showLabel: 'never' },
+  { met: TICK_PRM,                u: 0.015, label: 'PRM',        showLabel: 'desktop' },
+  { met: TICK_ARB_TIG,            u: 0.030, label: 'ARB',        showLabel: 'desktop' },
+  { met: MET_PROX_OPS_START,      u: 0.040, label: 'Prox Ops',  showLabel: 'desktop' },
+  { met: MET_HEO_CHECKOUTS_START, u: 0.055, label: 'HEO',       showLabel: 'desktop' },
+  { met: MET_TLI_START,           u: 0.080, label: 'TLI',        showLabel: 'always' },
+  { met: TICK_OTC1,               u: 0.18,  label: 'OTC-1',      showLabel: 'always' },
+  { met: TICK_OTC2,               u: 0.28,  label: 'OTC-2',      showLabel: 'always' },
+  { met: TICK_OTC3,               u: 0.38,  label: 'OTC-3',      showLabel: 'always' },
+  { met: TICK_LUNAR_SOI,          u: 0.42,  label: 'Lunar SOI',  showLabel: 'desktop' },
+  { met: TICK_CLOSEST,            u: 0.50,  label: 'Closest',    showLabel: 'always' },
+  { met: TICK_MAX_EARTH,          u: 0.505, label: 'Max Dist',   showLabel: 'never' },
+  { met: TICK_SOI_EXIT,           u: 0.58,  label: 'SOI Exit',   showLabel: 'desktop' },
+  { met: TICK_RTC1,               u: 0.66,  label: 'RTC-1',      showLabel: 'always' },
+  { met: TICK_RTC2,               u: 0.86,  label: 'RTC-2',      showLabel: 'always' },
+  { met: TICK_RTC3,               u: 0.94,  label: 'RTC-3',      showLabel: 'always' },
+  { met: TICK_CM_SM_SEP,          u: 0.97,  label: 'CM/SM Sep',  showLabel: 'desktop' },
+  { met: TICK_ENTRY_IF,           u: 0.985, label: 'Entry',      showLabel: 'desktop' },
+  { met: TICK_SPLASHDOWN,         u: 1.00,  label: 'Splashdown', showLabel: 'always' }
+];
+
+function metToU(metSeconds) {
+  if (metSeconds <= MISSION_MILESTONES[0].met) return 0;
+  if (metSeconds >= MISSION_MILESTONES[MISSION_MILESTONES.length - 1].met) return 1;
+  for (let i = 1; i < MISSION_MILESTONES.length; i++) {
+    if (metSeconds <= MISSION_MILESTONES[i].met) {
+      const prev = MISSION_MILESTONES[i - 1];
+      const curr = MISSION_MILESTONES[i];
+      const frac = (metSeconds - prev.met) / (curr.met - prev.met);
+      return prev.u + frac * (curr.u - prev.u);
+    }
+  }
+  return 1;
+}
+
+function getStageURange(stage) {
+  return [metToU(stage.metSeconds), metToU(stage.metEndSeconds)];
+}
+
+// ============================================================
+// CATMULL-ROM SPLINE UTILITY
+// ============================================================
+function catmullRom(p0, p1, p2, p3, t) {
+  const t2 = t * t, t3 = t2 * t;
+  return {
+    x: 0.5 * ((2*p1.x) + (-p0.x+p2.x)*t + (2*p0.x-5*p1.x+4*p2.x-p3.x)*t2 + (-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
+    y: 0.5 * ((2*p1.y) + (-p0.y+p2.y)*t + (2*p0.y-5*p1.y+4*p2.y-p3.y)*t2 + (-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
+  };
+}
+
+function catmullRomChain(points, samplesPerSeg) {
+  const samples = [];
+  const n = points.length;
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[Math.min(n - 1, i + 1)];
+    const p3 = points[Math.min(n - 1, i + 2)];
+    const steps = (i === n - 2) ? samplesPerSeg : samplesPerSeg; // uniform
+    for (let j = 0; j < steps; j++) {
+      const t = j / steps;
+      samples.push(catmullRom(p0, p1, p2, p3, t));
+    }
+  }
+  // Add the very last point
+  samples.push(points[n - 1]);
+  return samples;
+}
+
+// ============================================================
+// MISSION PATH — clean figure-8 via Catmull-Rom through waypoints
+// ============================================================
+class MissionPath {
+  constructor(layout) {
+    const { earthCx, earthCy, earthR, moonCx, moonCy, moonR } = layout;
+
+    // Two-lobe free-return trajectory:
+    // Small Earth lobe (top) + narrow throat + large cislunar lobe (bottom)
+    const cx = earthCx;  // centered vertical axis (Earth and Moon aligned)
+    const lobeR = earthR * 1.8;                          // Earth lobe radius
+    const legOffset = canvasW * 0.09;                     // lateral offset for outbound/return (~9% width)
+    const throatY = earthCy + lobeR + earthR * 0.8;      // throat position just below Earth lobe
+    const lunarLoopR = moonR * 3.5;                       // lunar loop tightness
+
+    // Interpolation helpers for vertical leg positions
+    const legTop = throatY + canvasH * 0.03;             // just below throat
+    const legMid = (throatY + moonCy) * 0.5;             // midway between throat and Moon
+    const legBot = moonCy - lunarLoopR - moonR * 2;      // approaching Moon
+
+    // ---- Waypoint chain: the path passes THROUGH each of these ----
+    this._waypoints = [
+      // === SMALL EARTH LOBE (wp 0-4) ===
+      { x: cx + earthR * 0.7,     y: earthCy + earthR * 0.5 },   // 0: KSC / liftoff
+      { x: cx + lobeR,            y: earthCy },                    // 1: LEO right
+      { x: cx,                    y: earthCy - lobeR },            // 2: HEO apex (top of lobe)
+      { x: cx - lobeR,            y: earthCy },                    // 3: HEO left
+      { x: cx - lobeR * 0.5,     y: earthCy + lobeR * 0.8 },     // 4: approaching throat (left side)
+
+      // === THROAT — TLI EXIT (wp 5) ===
+      { x: cx - legOffset * 0.8,  y: throatY },                   // 5: TLI departure (slightly left)
+
+      // === OUTBOUND LEG — LEFT SIDE (wp 6-8) ===
+      { x: cx - legOffset,        y: legTop + (legMid - legTop) * 0.33 }, // 6: OTC-1 zone
+      { x: cx - legOffset * 1.1,  y: legMid },                            // 7: OTC-2/3 zone
+      { x: cx - legOffset * 0.8,  y: legBot },                            // 8: Lunar SOI approach
+
+      // === LUNAR LOOP — AROUND MOON FAR SIDE (wp 9-11) ===
+      { x: cx - lunarLoopR,       y: moonCy + moonR * 0.5 },     // 9: approach from left
+      { x: cx,                    y: moonCy + lunarLoopR },       // 10: closest approach (below Moon)
+      { x: cx + lunarLoopR,       y: moonCy + moonR * 0.5 },     // 11: depart to right
+
+      // === RETURN LEG — RIGHT SIDE (wp 12-14) ===
+      { x: cx + legOffset * 0.8,  y: legBot },                            // 12: SOI exit zone
+      { x: cx + legOffset * 1.1,  y: legMid },                            // 13: RTC-1/2 zone
+      { x: cx + legOffset,        y: legTop + (legMid - legTop) * 0.33 }, // 14: RTC-3 zone
+
+      // === THROAT — RETURN ENTRY (wp 15) ===
+      { x: cx + lobeR * 0.5,      y: earthCy + lobeR * 0.8 },    // 15: return enters Earth lobe (right side)
+
+      // === FINAL APPROACH (wp 16-17) ===
+      { x: cx + lobeR * 0.8,      y: earthCy + earthR * 0.3 },   // 16: CM/SM sep / reentry approach
+      { x: cx + earthR * 0.4,     y: earthCy + earthR * 0.7 }    // 17: splashdown
+    ];
+
+    // Sample the Catmull-Rom chain densely
+    this._rawSamples = catmullRomChain(this._waypoints, 60);
+
+    // Build arc-length parameterization
+    this._lengths = [0];
+    this._totalLength = 0;
+    for (let i = 1; i < this._rawSamples.length; i++) {
+      const dx = this._rawSamples[i].x - this._rawSamples[i-1].x;
+      const dy = this._rawSamples[i].y - this._rawSamples[i-1].y;
+      this._totalLength += Math.sqrt(dx * dx + dy * dy);
+      this._lengths.push(this._totalLength);
+    }
+  }
+
+  // Arc-length parameterized: u in [0,1] → uniform position along path
+  _uToIndex(u) {
+    u = Math.max(0, Math.min(1, u));
+    const targetLen = u * this._totalLength;
+    // Binary search
+    let lo = 0, hi = this._rawSamples.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (this._lengths[mid] < targetLen) lo = mid + 1;
+      else hi = mid;
+    }
+    if (lo === 0) return { index: 0, frac: 0 };
+    const segStart = this._lengths[lo - 1];
+    const segEnd = this._lengths[lo];
+    const frac = (segEnd - segStart) < 0.0001 ? 0 : (targetLen - segStart) / (segEnd - segStart);
+    return { index: lo - 1, frac };
+  }
+
+  getPoint(u) {
+    const { index, frac } = this._uToIndex(u);
+    const a = this._rawSamples[index];
+    const b = this._rawSamples[Math.min(index + 1, this._rawSamples.length - 1)];
+    return {
+      x: a.x + (b.x - a.x) * frac,
+      y: a.y + (b.y - a.y) * frac
+    };
+  }
+
+  getTangent(u) {
+    const d = 0.003;
+    const p1 = this.getPoint(Math.max(0, u - d));
+    const p2 = this.getPoint(Math.min(1, u + d));
+    return Math.atan2(p2.y - p1.y, p2.x - p1.x);
+  }
+
+  getSubPath(u0, u1) {
+    const steps = Math.max(20, Math.round(Math.abs(u1 - u0) * 300));
+    const path = new Path2D();
+    for (let i = 0; i <= steps; i++) {
+      const u = u0 + (u1 - u0) * (i / steps);
+      const p = this.getPoint(u);
+      if (i === 0) path.moveTo(p.x, p.y);
+      else path.lineTo(p.x, p.y);
+    }
+    return path;
+  }
+
+  getTickPosition(u) {
+    const p = this.getPoint(u);
+    const angle = this.getTangent(u);
+    return { x: p.x, y: p.y, angle: angle + Math.PI / 2 };
+  }
+}
+
+// --- Mission path cache ---
+// (missionPathCache declared near canvas setup above)
+
+function getMissionPath() {
+  if (!missionPathCache || missionPathCache._cw !== canvasW || missionPathCache._ch !== canvasH) {
+    const layout = getUnifiedLayout();
+    missionPathCache = new MissionPath(layout);
+    missionPathCache._cw = canvasW;
+    missionPathCache._ch = canvasH;
+  }
+  return missionPathCache;
+}
+
+// --- Milestone validation (dev tool — call from console) ---
+function validateMilestones() {
+  const path = getMissionPath();
+  const layout = getUnifiedLayout();
+  console.log('=== Milestone Validation ===');
+  console.log(`Canvas: ${canvasW}x${canvasH}, Earth: (${layout.earthCx.toFixed(0)},${layout.earthCy.toFixed(0)}), Moon: (${layout.moonCx.toFixed(0)},${layout.moonCy.toFixed(0)})`);
+  for (const ms of MISSION_MILESTONES) {
+    const p = path.getPoint(ms.u);
+    const side = p.x < layout.earthCx ? 'LEFT' : p.x > layout.earthCx ? 'RIGHT' : 'CENTER';
+    console.log(`${ms.label.padEnd(12)} u=${ms.u.toFixed(3)} → (${p.x.toFixed(0)}, ${p.y.toFixed(0)}) ${side}`);
+  }
+}
+
+// --- Scene management (simplified) ---
+
+function buildScene(stageId) {
+  const stage = STAGES.find(s => s.id === stageId);
+  if (!stage) return null;
+  return { stageId: stage.id, stage: stage };
+}
+
+function onStageSelected(stageId) {
+  currentScene = buildScene(stageId);
+  markerTrail = [];
+  computeGhostPosition();
+}
+
+// --- Marker state ---
+let markerU = 0;              // live position (0-1) — always from system clock
+let ghostStartU = 0;          // selected stage start position
+let ghostEndU = 0;            // selected stage end position
+let markerTrail = [];
+const TRAIL_LENGTH = 5;
+const TRAIL_INTERVAL = 50;
+let lastTrailTime = 0;
+
+function computeMarkerPosition() {
+  const now = Date.now();
+  const elapsedSec = (now - T0.getTime()) / 1000;
+  markerU = metToU(elapsedSec);
+}
+
+function computeGhostPosition() {
+  if (!currentScene) return;
+  const [startU, endU] = getStageURange(currentScene.stage);
+  ghostStartU = startU;
+  ghostEndU = endU;
+}
+
+function updateMarkerTrail(timestamp) {
+  if (timestamp - lastTrailTime > TRAIL_INTERVAL) {
+    lastTrailTime = timestamp;
+    const path = getMissionPath();
+    const pos = path.getPoint(markerU);
+    if (pos) {
+      markerTrail.push({ x: pos.x, y: pos.y });
+      if (markerTrail.length > TRAIL_LENGTH) markerTrail.shift();
+    }
+  }
+}
+
+// --- Draw live marker (lime green dot + glow + trail) ---
+function drawMarker(x, y) {
+  ctx.save();
+  ctx.shadowColor = '#39ff14';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.arc(x, y, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#39ff14';
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.beginPath();
+  ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.fill();
+  ctx.restore();
+
+  for (let i = 0; i < markerTrail.length; i++) {
+    const alpha = 0.15 + 0.15 * (i / markerTrail.length);
+    const size = 1.5 + 1.0 * (i / markerTrail.length);
+    ctx.beginPath();
+    ctx.arc(markerTrail[i].x, markerTrail[i].y, size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(57, 255, 20, ${alpha})`;
+    ctx.fill();
+  }
+}
+
+// --- Draw ghost marker (azure hollow ring at selected stage) ---
+function drawGhostMarker(x, y) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, 7, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0, 127, 255, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Inner subtle glow
+  ctx.beginPath();
+  ctx.arc(x, y, 10, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0, 127, 255, 0.15)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// --- Draw traveled vs upcoming path ---
+function drawTraveledPath(path, liveU) {
+  ctx.save();
+  if (liveU > 0.001) {
+    const traveled = path.getSubPath(0, Math.min(liveU, 1));
+    ctx.strokeStyle = 'rgba(187, 134, 252, 0.65)';  // light purple for traveled
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.stroke(traveled);
+  }
+  if (liveU < 0.999) {
+    const upcoming = path.getSubPath(Math.max(liveU, 0), 1);
+    ctx.strokeStyle = 'rgba(0, 127, 255, 0.18)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 5]);
+    ctx.stroke(upcoming);
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+// --- Draw leg highlight for selected stage ---
+function drawLegHighlight(path, startU, endU) {
+  if (endU - startU < 0.001) return;
+  ctx.save();
+  const leg = path.getSubPath(startU, endU);
+  ctx.strokeStyle = 'rgba(0, 127, 255, 0.45)';
+  ctx.lineWidth = 5;
+  ctx.setLineDash([]);
+  ctx.stroke(leg);
+  ctx.restore();
+}
+
+// --- Draw tick marks from MISSION_MILESTONES (stage-aware labels) ---
+function drawMissionTicks(path) {
+  if (!currentScene) return;
+  const [stageStartU, stageEndU] = getStageURange(currentScene.stage);
+  const font = `${Math.max(7, canvasH * 0.014)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
+  ctx.save();
+  ctx.font = font;
+
+  // Determine which milestones get labels:
+  // - Milestones within the selected stage's u range
+  // - The nearest milestone before the stage
+  // - The nearest milestone after the stage
+  let beforeMs = null;
+  let afterMs = null;
+  const stageMs = [];
+  for (const ms of MISSION_MILESTONES) {
+    if (ms.u >= stageStartU - 0.001 && ms.u <= stageEndU + 0.001) {
+      stageMs.push(ms);
+    } else if (ms.u < stageStartU) {
+      beforeMs = ms; // keep overwriting — we want the LAST one before
+    } else if (ms.u > stageEndU && !afterMs) {
+      afterMs = ms; // first one after
+    }
+  }
+  const labelSet = new Set(stageMs);
+  if (beforeMs) labelSet.add(beforeMs);
+  if (afterMs) labelSet.add(afterMs);
+
+  const drawnLabels = [];
+
+  for (const ms of MISSION_MILESTONES) {
+    const pos = path.getTickPosition(ms.u);
+    if (!pos) continue;
+
+    // Tick mark (always drawn)
+    const len = 5;
+    ctx.beginPath();
+    ctx.moveTo(pos.x - len * Math.cos(pos.angle), pos.y - len * Math.sin(pos.angle));
+    ctx.lineTo(pos.x + len * Math.cos(pos.angle), pos.y + len * Math.sin(pos.angle));
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Label (only for stage-relevant milestones)
+    if (!labelSet.has(ms)) continue;
+
+    // Earth-lobe suppression: in the crowded zone near Earth, only show
+    // TLI, Splashdown, and the selected stage's own milestones
+    const isEarthLobe = ms.u < 0.10 || ms.u > 0.93;
+    if (isEarthLobe) {
+      const isTLI = ms.label === 'TLI';
+      const isSplashdown = ms.label === 'Splashdown';
+      const inSelected = ms.u >= stageStartU - 0.001 && ms.u <= stageEndU + 0.001;
+      if (!isTLI && !isSplashdown && !inSelected) continue;
+    }
+
+    const labelOff = 10;
+    const lx = pos.x + labelOff * Math.cos(pos.angle);
+    const ly = pos.y + labelOff * Math.sin(pos.angle);
+
+    // Collision avoidance
+    let collides = false;
+    for (const prev of drawnLabels) {
+      const dx = lx - prev.x, dy = ly - prev.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 24) { collides = true; break; }
+    }
+    if (collides) continue;
+
+    const inStage = stageMs.includes(ms);
+    ctx.fillStyle = inStage ? 'rgba(255, 255, 255, 0.55)' : 'rgba(255, 255, 255, 0.3)';
+    ctx.textAlign = 'center';
+    ctx.fillText(ms.label, lx, ly + 3);
+    drawnLabels.push({ x: lx, y: ly });
+  }
+  ctx.restore();
+}
+
+// --- Animation loop ---
+function update(timestamp) {
+  updateStarfield(timestamp);
+  computeMarkerPosition();
+  updateMarkerTrail(timestamp);
+}
+
+function render() {
+  if (!currentScene) return;
+  ctx.clearRect(0, 0, canvasW, canvasH);
+
+  drawStarfield();
+
+  const layout = getUnifiedLayout();
+  const path = getMissionPath();
+
+  // Base path: traveled + upcoming (split at live position)
+  drawTraveledPath(path, markerU);
+
+  // Leg highlight for selected stage
+  const [legStart, legEnd] = getStageURange(currentScene.stage);
+  drawLegHighlight(path, legStart, legEnd);
+
+  // Bodies
+  drawEarth(layout.earthCx, layout.earthCy, layout.earthR);
+  drawMoon(layout.moonCx, layout.moonCy, layout.moonR);
+
+  // Tick marks
+  drawMissionTicks(path);
+
+  // Ghost markers (azure rings at selected stage start + end)
+  const ghostStart = path.getPoint(ghostStartU);
+  const ghostEnd = path.getPoint(ghostEndU);
+  drawGhostMarker(ghostStart.x, ghostStart.y);
+  if (Math.abs(ghostEndU - ghostStartU) > 0.005) {
+    drawGhostMarker(ghostEnd.x, ghostEnd.y);
+  }
+
+  // Live marker (always at current position)
+  const livePos = path.getPoint(markerU);
+  drawMarker(livePos.x, livePos.y);
+}
+
+function startRenderLoop() {
+  function frame(timestamp) {
+    update(timestamp);
+    render();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+
+/* ============================================================
+   UI STATE
+   ============================================================ */
+let selectedStageId = null;
+let liveStageId = null;
+
+/* ============================================================
+   COMPUTE LIVE STAGE
+   Determines which stage is currently active based on system clock.
+   ============================================================ */
+function computeLiveStage() {
+  const now = Date.now();
+  const elapsedSec = (now - T0.getTime()) / 1000;
+
+  let newLiveId = STAGES[0].id; // default: before launch
+  for (let i = 0; i < STAGES.length; i++) {
+    const s = STAGES[i];
+    if (elapsedSec >= s.metSeconds) {
+      newLiveId = s.id;
+    } else {
+      break;
+    }
+  }
+
+  if (newLiveId !== liveStageId) {
+    liveStageId = newLiveId;
+    updateLiveIndicators();
+  }
+}
+
+/* ============================================================
+   UPDATE LIVE INDICATORS
+   Moves the pulsing dot and LIVE badge to the current live stage.
+   ============================================================ */
+function updateLiveIndicators() {
+  // Strip tabs
+  document.querySelectorAll('.strip-tab').forEach(tab => {
+    tab.classList.toggle('live', tab.dataset.stageId === liveStageId);
+  });
+  // Sidebar tabs
+  document.querySelectorAll('.sidebar-tab').forEach(tab => {
+    tab.classList.toggle('live', tab.dataset.stageId === liveStageId);
+  });
+  // Update past/future classes
+  const now = Date.now();
+  const elapsedSec = (now - T0.getTime()) / 1000;
+  STAGES.forEach(s => {
+    const stripTab = document.querySelector(`.strip-tab[data-stage-id="${s.id}"]`);
+    const sidebarTab = document.querySelector(`.sidebar-tab[data-stage-id="${s.id}"]`);
+    const isPast = elapsedSec >= s.metEndSeconds;
+    const isFuture = elapsedSec < s.metSeconds;
+    [stripTab, sidebarTab].forEach(tab => {
+      if (!tab) return;
+      tab.classList.toggle('past', isPast);
+      tab.classList.toggle('future', isFuture);
+    });
+  });
+}
+
+/* ============================================================
+   SELECT STAGE
+   Updates UI to show the selected stage's content.
+   Does NOT affect the live indicator.
+   ============================================================ */
+function selectStage(stageId) {
+  if (selectedStageId === stageId) return;
+  selectedStageId = stageId;
+
+  const stage = STAGES.find(s => s.id === stageId);
+  if (!stage) return;
+
+  // Update visualization scene
+  onStageSelected(stageId);
+
+  // Update active tab classes
+  document.querySelectorAll('.strip-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.stageId === stageId);
+  });
+  document.querySelectorAll('.sidebar-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.stageId === stageId);
+  });
+
+  // HUD: title + flight day
+  document.getElementById('hudTitle').textContent = stage.title;
+  document.getElementById('hudFlightDay').textContent = stage.flightDay;
+
+  // HUD: key stats
+  const statsEl = document.getElementById('hudStats');
+  if (stage.keyStats && stage.keyStats.length > 0) {
+    statsEl.innerHTML = stage.keyStats.map(s =>
+      `<div class="hud-stat"><span class="hud-stat-value">${s.value}</span> ${s.label}</div>`
+    ).join('');
+  } else {
+    statsEl.innerHTML = '<div class="hud-stat">—</div>';
+  }
+
+  // Accordion: description
+  document.getElementById('accDescriptionBody').textContent = stage.description;
+
+  // Accordion: activities
+  const activitiesBody = document.getElementById('accActivitiesBody');
+  if (stage.activities && stage.activities.length > 0) {
+    activitiesBody.innerHTML = '<ul>' + stage.activities.map(a => `<li>${a}</li>`).join('') + '</ul>';
+  } else {
+    activitiesBody.textContent = 'No activities listed for this stage.';
+  }
+
+  // Accordion: technical details
+  const techBody = document.getElementById('accTechnicalBody');
+  let techHtml = '';
+  if (stage.keyStats && stage.keyStats.length > 0) {
+    techHtml += '<div class="stats-grid">' + stage.keyStats.map(s =>
+      `<div class="stat-card"><div class="stat-card-label">${s.label}</div><div class="stat-card-value">${s.value}</div></div>`
+    ).join('') + '</div>';
+  }
+  if (stage.orbitParams) {
+    const op = stage.orbitParams;
+    techHtml += '<div class="stats-grid" style="margin-top:8px">';
+    techHtml += `<div class="stat-card"><div class="stat-card-label">Perigee</div><div class="stat-card-value">${Math.round(op.perigeeKm * 0.621371)} mi (${op.perigeeKm} km)</div></div>`;
+    techHtml += `<div class="stat-card"><div class="stat-card-label">Apogee</div><div class="stat-card-value">${Math.round(op.apogeeKm * 0.621371).toLocaleString()} mi (${op.apogeeKm.toLocaleString()} km)</div></div>`;
+    techHtml += `<div class="stat-card"><div class="stat-card-label">Orbital Period</div><div class="stat-card-value">~${op.periodMin} min</div></div>`;
+    techHtml += `<div class="stat-card"><div class="stat-card-label">Type</div><div class="stat-card-value">${op.isTransitional ? 'Transitional' : 'Stable orbit'}</div></div>`;
+    techHtml += '</div>';
+  }
+  // Show trajectory position from milestone map
+  const [stageU0, stageU1] = getStageURange(stage);
+  if (stageU1 - stageU0 > 0.001) {
+    techHtml += '<div class="stats-grid" style="margin-top:8px">';
+    techHtml += `<div class="stat-card"><div class="stat-card-label">Mission Progress</div><div class="stat-card-value">${Math.round(stageU0 * 100)}% – ${Math.round(stageU1 * 100)}%</div></div>`;
+    techHtml += '</div>';
+  }
+  techBody.innerHTML = techHtml || '<p>No additional technical data.</p>';
+
+  // Update timer immediately
+  updateTimer();
+
+  // Close all accordions on stage switch for clean at-a-glance view
+  document.querySelectorAll('.accordion').forEach(d => d.removeAttribute('open'));
+}
+
+/* ============================================================
+   TIMER
+   Shows T+ (elapsed) or T- (countdown) for the selected stage.
+   ============================================================ */
+function formatDuration(totalSeconds) {
+  const neg = totalSeconds < 0;
+  let s = Math.abs(Math.floor(totalSeconds));
+  const days = Math.floor(s / 86400); s %= 86400;
+  const hours = Math.floor(s / 3600); s %= 3600;
+  const mins = Math.floor(s / 60); s %= 60;
+  const secs = s;
+
+  const pad = n => String(n).padStart(2, '0');
+
+  let str = '';
+  if (days > 0) {
+    str = `${pad(days)}:${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+  } else {
+    str = `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+  }
+  return (neg ? 'T- ' : 'T+ ') + str;
+}
+
+function updateTimer() {
+  if (!selectedStageId) return;
+  const stage = STAGES.find(s => s.id === selectedStageId);
+  if (!stage) return;
+
+  const now = Date.now();
+  const stageStartMs = T0.getTime() + stage.metSeconds * 1000;
+  const diffSeconds = (now - stageStartMs) / 1000;
+
+  const timerEl = document.getElementById('hudTimer');
+  const labelEl = document.getElementById('hudTimerLabel');
+  timerEl.textContent = formatDuration(diffSeconds);
+
+  if (diffSeconds >= 0) {
+    labelEl.textContent = 'Time since stage start';
+    timerEl.style.color = 'var(--accent)';
+  } else {
+    labelEl.textContent = 'Countdown to stage';
+    timerEl.style.color = 'var(--lime)';
+  }
+
+  // Overall mission elapsed time
+  const missionEl = document.getElementById('hudTimerMission');
+  const missionDiff = (now - T0.getTime()) / 1000;
+  missionEl.textContent = 'Mission: ' + formatDuration(missionDiff);
+}
+
+/* ============================================================
+   BUILD TABS (from data)
+   ============================================================ */
+function buildTabs() {
+  const stripScroll = document.getElementById('stripScroll');
+  const sidebarTabs = document.getElementById('sidebarTabs');
+
+  STAGES.forEach(stage => {
+    // Strip tab
+    const stripTab = document.createElement('button');
+    stripTab.className = 'strip-tab' + (stage.isKeyMilestone ? ' milestone' : '');
+    stripTab.dataset.stageId = stage.id;
+    stripTab.innerHTML = `<span class="live-dot"></span><span class="live-badge">LIVE</span><span class="tab-label">${stage.name}</span>`;
+    stripTab.addEventListener('click', () => selectStage(stage.id));
+    stripScroll.appendChild(stripTab);
+
+    // Sidebar tab
+    const sidebarTab = document.createElement('button');
+    sidebarTab.className = 'sidebar-tab' + (stage.isKeyMilestone ? ' milestone' : '');
+    sidebarTab.dataset.stageId = stage.id;
+    sidebarTab.innerHTML = `<span class="live-dot"></span><span class="live-badge">LIVE</span><span class="tab-label">${stage.name}</span>`;
+    sidebarTab.addEventListener('click', () => selectStage(stage.id));
+    sidebarTabs.appendChild(sidebarTab);
+  });
+}
+
+/* ============================================================
+   ARROW BUTTONS (scroll only, no auto-select)
+   ============================================================ */
+function setupArrows() {
+  const strip = document.getElementById('stripScroll');
+  const scrollAmount = 120;
+
+  document.querySelector('.strip-arrow--left').addEventListener('click', () => {
+    strip.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+  });
+  document.querySelector('.strip-arrow--right').addEventListener('click', () => {
+    strip.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  });
+}
+
+/* ============================================================
+   AUTO-SCROLL STRIP TO LIVE STAGE
+   ============================================================ */
+function scrollStripToLive() {
+  const liveTab = document.querySelector(`.strip-tab[data-stage-id="${liveStageId}"]`);
+  if (!liveTab) return;
+  const strip = document.getElementById('stripScroll');
+  const tabRect = liveTab.getBoundingClientRect();
+  const stripRect = strip.getBoundingClientRect();
+  const offset = tabRect.left - stripRect.left - (stripRect.width / 2) + (tabRect.width / 2);
+  strip.scrollBy({ left: offset, behavior: 'smooth' });
+}
+
+/* ============================================================
+   INITIALIZATION
+   ============================================================ */
+function init() {
+  // Initialize canvas sizing + observer
+  resizeCanvas();
+  new ResizeObserver(() => resizeCanvas()).observe(canvas.parentElement);
+
+  buildTabs();
+  setupArrows();
+  computeLiveStage();
+  selectStage(liveStageId);
+
+  // Start the visualization animation loop
+  startRenderLoop();
+
+  // Auto-scroll strip after a brief delay so DOM is ready
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      scrollStripToLive();
+    });
+  });
+
+  // Tick every second
+  setInterval(() => {
+    computeLiveStage();
+    updateTimer();
+  }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
