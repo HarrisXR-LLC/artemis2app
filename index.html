@@ -21,8 +21,10 @@
   --lime:        #39ff14;
   --lime-glow:   rgba(57, 255, 20, 0.25);
   --chip-bg:     rgba(10, 10, 15, 0.6);
-  --purple:      #bb86fc;
-  --purple-glow: rgba(187, 134, 252, 0.25);
+  /* 3-color mission system */
+  --color-past:    #2a6cc7;   /* darker blue — done/completed */
+  --color-live:    #39ff14;   /* green — current stage */
+  --color-future:  #6fa8ff;   /* bright cornflower blue — upcoming */
   --chip-border: rgba(255, 255, 255, 0.08);
   --font-sans:   -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-mono:   'Courier New', Courier, monospace;
@@ -118,23 +120,16 @@ html, body {
   color: var(--text);
   background: rgba(255,255,255,0.03);
 }
-.strip-tab.active {
-  color: var(--text-bright);
-  border-bottom-color: var(--accent);
-}
-.strip-tab.past {
-  color: rgba(200, 200, 208, 0.4);
-}
-.strip-tab.future {
-  color: rgba(200, 200, 208, 0.6);
-}
-.strip-tab.milestone {
-  color: rgba(57, 255, 20, 0.6);
-}
-.strip-tab.milestone.active {
-  color: var(--lime);
-  border-bottom-color: var(--lime);
-}
+/* 3-color tab states: dark blue(past), green(current), bright blue(future/next) */
+.strip-tab.state-past { color: var(--color-past); border-bottom-color: transparent; }
+.strip-tab.state-current { color: var(--color-live); border-bottom-color: transparent; }
+.strip-tab.state-next { color: var(--color-future); border-bottom-color: transparent; }
+.strip-tab.state-future { color: var(--color-future); border-bottom-color: transparent; }
+/* Selected = thick underline + brighter text */
+.strip-tab.state-past.active { color: #4a8fe0; border-bottom: 3px solid var(--color-past); }
+.strip-tab.state-current.active { color: #7fff5a; border-bottom: 3px solid var(--color-live); }
+.strip-tab.state-next.active { color: #9ac4ff; border-bottom: 3px solid var(--color-future); }
+.strip-tab.state-future.active { color: #9ac4ff; border-bottom: 3px solid var(--color-future); }
 
 /* Live indicator dot */
 .live-dot {
@@ -155,16 +150,27 @@ html, body {
   50% { opacity: 1; }
 }
 
-.live-badge {
+.live-badge, .done-badge, .next-badge {
   display: none;
-  font-size: 0.6em;
+  font-size: 0.55em;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: var(--lime);
   text-transform: uppercase;
 }
+.live-badge { color: var(--color-live); }
+.done-badge { color: var(--color-past); opacity: 0.7; }
+.next-badge { color: var(--color-future); }
+
 .strip-tab.live .live-badge,
 .sidebar-tab.live .live-badge {
+  display: inline;
+}
+.strip-tab.state-past .done-badge,
+.sidebar-tab.state-past .done-badge {
+  display: inline;
+}
+.strip-tab.state-next .next-badge,
+.sidebar-tab.state-next .next-badge {
   display: inline;
 }
 
@@ -232,22 +238,16 @@ html, body {
   background: rgba(255,255,255,0.03);
   color: var(--text-bright);
 }
-.sidebar-tab.active {
-  color: var(--text-bright);
-  border-left-color: var(--accent);
-  background: rgba(0, 127, 255, 0.06);
-}
-.sidebar-tab.milestone {
-  color: rgba(57, 255, 20, 0.7);
-}
-.sidebar-tab.milestone.active {
-  color: var(--lime);
-  border-left-color: var(--lime);
-  background: rgba(57, 255, 20, 0.06);
-}
-.sidebar-tab.past {
-  color: rgba(200, 200, 208, 0.45);
-}
+/* 3-color sidebar tab states */
+.sidebar-tab.state-past { color: var(--color-past); border-left-color: transparent; }
+.sidebar-tab.state-current { color: var(--color-live); border-left-color: transparent; }
+.sidebar-tab.state-next { color: var(--color-future); border-left-color: transparent; }
+.sidebar-tab.state-future { color: var(--color-future); border-left-color: transparent; }
+/* Selected = thick left border + brighter text + subtle bg */
+.sidebar-tab.state-past.active { color: #4a8fe0; border-left: 4px solid var(--color-past); background: rgba(42,108,199,0.08); }
+.sidebar-tab.state-current.active { color: #7fff5a; border-left: 4px solid var(--color-live); background: rgba(57,255,20,0.06); }
+.sidebar-tab.state-next.active { color: #9ac4ff; border-left: 4px solid var(--color-future); background: rgba(111,168,255,0.06); }
+.sidebar-tab.state-future.active { color: #9ac4ff; border-left: 4px solid var(--color-future); background: rgba(111,168,255,0.06); }
 
 .sidebar-crew {
   padding: 12px 16px;
@@ -470,6 +470,17 @@ html, body {
   color: var(--accent);
   font-style: italic;
 }
+.brand-mission-time {
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  color: rgba(200, 200, 208, 0.5);
+  margin-left: auto;
+}
+.sidebar-header .brand-mission-time {
+  margin-left: 0;
+  margin-top: 4px;
+  font-size: 0.75em;
+}
 
 /* ============================================================
    WATCH BUTTONS
@@ -493,10 +504,10 @@ html, body {
 .watch-btn--primary {
   background: var(--accent);
   color: #fff;
-  font-size: 0.68em;
+  font-size: 1.06em;
   font-weight: 600;
-  padding: 5px 12px;
-  min-height: 28px;
+  padding: 9px 20px;
+  min-height: 40px;
 }
 .watch-btn--primary:hover {
   background: #1a8fff;
@@ -549,6 +560,173 @@ html, body {
 }
 
 /* ============================================================
+   TIME CONVERSION MODAL
+   ============================================================ */
+.time-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.time-modal-overlay.open {
+  display: flex;
+}
+.time-modal {
+  background: #14141f;
+  border: 1px solid rgba(0,127,255,0.3);
+  border-radius: 12px;
+  padding: 24px 32px;
+  text-align: center;
+  min-width: 240px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.time-modal-met {
+  font-family: var(--font-mono);
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.time-modal-local {
+  font-size: 1.1em;
+  color: var(--text-bright);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.time-modal-hint {
+  font-size: 0.7em;
+  color: rgba(200,200,208,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Activity list styles */
+.activity-item { margin-bottom: 6px; }
+.activity-item.past-activity {
+  text-decoration: line-through;
+  color: rgba(200,200,208,0.35);
+}
+.activity-item.future-activity {
+  color: rgba(200,200,208,0.65);
+}
+.activity-time {
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.activity-time:hover { color: var(--accent); }
+
+/* ============================================================
+   DEBUG PATH EDITOR PANEL
+   ============================================================ */
+.debug-btn {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 8px;
+  font-size: 0.55em;
+  color: rgba(200,200,208,0.3);
+  background: none;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+.debug-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.debug-panel {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 50vh;
+  background: #0d0d18;
+  border-top: 2px solid var(--accent);
+  z-index: 100;
+  flex-direction: column;
+  font-size: 12px;
+  color: var(--text);
+}
+.debug-panel.open { display: flex; }
+
+.debug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #10101a;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.debug-header-title { font-weight: 700; color: var(--accent); }
+.debug-header button {
+  background: none; border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text); padding: 3px 10px; border-radius: 4px;
+  cursor: pointer; font-size: 11px; margin-left: 6px;
+}
+.debug-header button:hover { border-color: var(--accent); color: var(--accent); }
+.debug-header .copy-btn { color: var(--lime); border-color: rgba(57,255,20,0.3); }
+.debug-header .copy-btn:hover { border-color: var(--lime); }
+
+.debug-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.seg-editor {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.02);
+}
+.seg-editor-title {
+  font-weight: 600;
+  font-size: 11px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.seg-editor-title .seg-color {
+  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+}
+.seg-editor select, .seg-editor input {
+  background: #1a1a28;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  width: 70px;
+}
+.seg-editor select { width: auto; }
+.seg-editor label {
+  font-size: 10px;
+  color: rgba(200,200,208,0.5);
+  margin-right: 2px;
+}
+.seg-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+.seg-field-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.seg-field-group.locked input { opacity: 0.4; }
+
+/* ============================================================
    SHORT VIEWPORT RULE (< 600px height)
    ============================================================ */
 @media (max-height: 599px) {
@@ -581,6 +759,11 @@ html, body {
   .mobile-disclaimer {
     display: none;
   }
+  .sidebar .watch-btns {
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0;
+  }
   .sidebar {
     display: flex;
   }
@@ -605,10 +788,7 @@ html, body {
     <span class="mobile-brand-badge">&#9789;</span>
     <span class="mobile-brand-title">ARTEMIS II</span>
     <span class="mobile-brand-sub">INTEGRITY</span>
-    <div class="watch-btns">
-      <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=m3kR2KK8TEs" target="_blank" rel="noopener">&#9654; NASA Live</a>
-      <a class="watch-btn watch-btn--secondary" href="https://www.youtube.com/@NASA/streams" target="_blank" rel="noopener">Streams &#8599;</a>
-    </div>
+
   </div>
 
   <!-- ========== MOBILE STAGE STRIP ========== -->
@@ -623,10 +803,7 @@ html, body {
     <div class="sidebar-header">
       <div class="mission-title"><span class="mission-badge">&#9789;</span>ARTEMIS II</div>
       <div class="mission-subtitle">INTEGRITY</div>
-      <div class="watch-btns" style="margin-top:10px">
-        <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=m3kR2KK8TEs" target="_blank" rel="noopener">&#9654; NASA Live</a>
-        <a class="watch-btn watch-btn--secondary" href="https://www.youtube.com/@NASA/streams" target="_blank" rel="noopener">NASA Streams &#8599;</a>
-      </div>
+
     </div>
     <div class="sidebar-tabs" id="sidebarTabs"></div>
     <div class="sidebar-crew">
@@ -639,6 +816,11 @@ html, body {
     <div class="sidebar-disclaimer">
       Approximate mission data &middot; Updated as mission progresses<br>
       Source: NASA Artemis II
+      <div class="watch-btns" style="margin-top:8px">
+        <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=m3kR2KK8TEs" target="_blank" rel="noopener">&#9654; NASA Broadcast</a>
+        <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=6RwfNBtepa4" target="_blank" rel="noopener">&#9654; ORION Live</a>
+      </div>
+      <button class="debug-btn" onclick="toggleDebugPanel()">DEBUG</button>
     </div>
   </nav>
 
@@ -658,7 +840,6 @@ html, body {
         <div class="hud-chip">
           <div class="hud-timer-label" id="hudTimerLabel">Mission Elapsed Time</div>
           <div class="hud-timer" id="hudTimer">T+ 00:00:00:00</div>
-          <div class="hud-timer-mission" id="hudTimerMission">Mission: T+ 00:00:00:00</div>
         </div>
       </div>
 
@@ -684,10 +865,47 @@ html, body {
       </details>
       <div class="mobile-disclaimer">
         Approximate mission data &middot; Updated as mission progresses &middot; Source: NASA Artemis II
+        <div class="watch-btns" style="margin-top:8px;justify-content:center">
+          <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=m3kR2KK8TEs" target="_blank" rel="noopener">&#9654; NASA Broadcast</a>
+          <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=6RwfNBtepa4" target="_blank" rel="noopener">&#9654; ORION Live</a>
+        </div>
+        <button class="debug-btn" onclick="toggleDebugPanel()">DEBUG</button>
       </div>
     </div>
   </main>
 
+</div>
+
+<!-- Time Conversion Modal -->
+<div class="time-modal-overlay" id="timeModalOverlay" onclick="closeTimeModal()">
+  <div class="time-modal" onclick="event.stopPropagation()">
+    <div class="time-modal-met" id="timeModalMet">T+ 00:00:00</div>
+    <div class="time-modal-local" id="timeModalLocal">--</div>
+    <div class="time-modal-hint">Your local time</div>
+  </div>
+</div>
+
+<!-- Debug Path Editor Panel -->
+<div class="debug-panel" id="debugPanel">
+  <div class="debug-header">
+    <span class="debug-header-title">Path Editor</span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <button onclick="smoothSelectedJoint()" style="font-size:10px;padding:2px 8px;background:none;border:1px solid rgba(255,255,255,0.15);color:var(--text);border-radius:3px;cursor:pointer">Smooth Bezier</button>
+      <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" id="debugHighlight" onchange="debugHighlightPath=this.checked"> Highlight
+      </label>
+      <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" id="debugHourMarks" onchange="debugShowHourMarks=this.checked"> Hours
+      </label>
+      <label style="font-size:11px;display:flex;align-items:center;gap:3px">
+        T+ <input type="text" id="debugTimeOverride" placeholder="HH:MM:SS" style="width:80px;background:#1a1a28;border:1px solid rgba(255,255,255,0.15);color:var(--color-live);padding:2px 5px;border-radius:3px;font-family:var(--font-mono);font-size:11px" onchange="applyTimeOverride(this.value)">
+        <button onclick="clearTimeOverride()" style="font-size:10px;padding:2px 6px;background:none;border:1px solid rgba(255,255,255,0.1);color:var(--text);border-radius:3px;cursor:pointer">Reset</button>
+      </label>
+      <button class="copy-btn" onclick="copySegmentConfig()">Copy Config</button>
+      <button onclick="toggleDebugPanel()">Close</button>
+    </div>
+  </div>
+  <div class="debug-body" id="debugBody"></div>
 </div>
 
 <script>
@@ -704,6 +922,37 @@ html, body {
 
 // T+0: April 1, 2026, 6:35:12 PM EDT — confirmed actual liftoff
 const T0 = new Date('2026-04-01T18:35:12-04:00');
+
+// --- Debug time override ---
+let debugTimeOverrideMs = null; // null = use real time, otherwise = overridden Date.now() value
+
+function getEffectiveNow() {
+  return debugTimeOverrideMs != null ? debugTimeOverrideMs : Date.now();
+}
+
+function applyTimeOverride(val) {
+  // Parse HH:MM:SS or D:HH:MM:SS
+  const parts = val.trim().split(':').map(Number);
+  if (parts.some(isNaN)) return;
+  let totalSec;
+  if (parts.length === 3) totalSec = parts[0] * 3600 + parts[1] * 60 + parts[2];
+  else if (parts.length === 4) totalSec = parts[0] * 86400 + parts[1] * 3600 + parts[2] * 60 + parts[3];
+  else return;
+  debugTimeOverrideMs = T0.getTime() + totalSec * 1000;
+  computeLiveStage();
+  updateLiveIndicators();
+  if (selectedStageId) {
+    const stage = STAGES.find(s => s.id === selectedStageId);
+    if (stage) { selectStage(null); selectStage(stage.id); } // force refresh
+  }
+}
+
+function clearTimeOverride() {
+  debugTimeOverrideMs = null;
+  document.getElementById('debugTimeOverride').value = '';
+  computeLiveStage();
+  updateLiveIndicators();
+}
 
 // --- Helper: D/HH:MM:SS → total seconds ---
 function met(d, h, m, s) { return d * 86400 + h * 3600 + m * 60 + s; }
@@ -767,11 +1016,11 @@ const STAGES = [
     metEndSeconds: MET_ICPS_BURNS_START,
     description: 'SLS lifted off from Kennedy Space Center\'s Launch Complex 39B at 6:35 PM EDT, generating 8.8 million pounds of thrust. Twin solid rocket boosters and four RS-25 engines propelled the 5.75-million-pound rocket through the atmosphere, achieving orbit insertion in just over 8 minutes.',
     activities: [
-      'Solid rocket booster separation at T+2:09',
-      'Launch abort system jettison at T+3:13',
-      'Core stage main engine cutoff at T+8:02',
-      'Core stage separation from ICPS at T+8:14',
-      'Solar array wings deployment (~18 min after launch)'
+      { text: 'Solid rocket booster separation', met: met(0,0,2,9), label: 'T+2m 09s' },
+      { text: 'Launch abort system jettison', met: met(0,0,3,13), label: 'T+3m 13s' },
+      { text: 'Core stage main engine cutoff', met: met(0,0,8,2), label: 'T+8m 02s' },
+      { text: 'Core stage separation from ICPS', met: met(0,0,8,14), label: 'T+8m 14s' },
+      { text: 'Solar array wings deployment', met: met(0,0,20,0), label: '~T+20m' }
     ],
 
     isKeyMilestone: false,
@@ -805,9 +1054,9 @@ const STAGES = [
     metEndSeconds: MET_PROX_OPS_START,
     description: 'The Interim Cryogenic Propulsion Stage performs two critical burns: the Perigee Raise Maneuver (PRM) and the Apogee Raise Burn (ARB). These raise Orion from its initial low orbit into a high elliptical Earth orbit with an apogee of ~43,500 miles.',
     activities: [
-      'ICPS Perigee Raise Maneuver (PRM) at T+50 min',
-      'ICPS Apogee Raise Burn (ARB) at T+1h 47m',
-      'Orbit raised to ~1,381 × 43,500 miles'
+      { text: 'ICPS Perigee Raise Maneuver (PRM)', met: met(0,0,50,0), label: 'T+50m' },
+      { text: 'ICPS Apogee Raise Burn (ARB)', met: met(0,1,47,0), label: 'T+1h 47m' },
+
     ],
 
     isKeyMilestone: false,
@@ -836,11 +1085,11 @@ const STAGES = [
     metEndSeconds: MET_HEO_CHECKOUTS_START,
     description: 'Orion separates from the ICPS upper stage, then the crew manually pilots the spacecraft to approach, station-keep, and back away — testing future docking capabilities using cameras and windows. The ICPS is later disposed.',
     activities: [
-      'Orion/ICPS spring separation at T+3h 23m',
-      'Manual approach and station-keeping near ICPS',
-      'Proximity operations conclude at ~T+4h 35m',
-      'ICPS disposal burn at T+5h 02m',
-      'CubeSat deployments begin at ~T+5h 04m'
+      { text: 'Orion/ICPS spring separation', met: met(0,3,23,0), label: 'T+3h 23m' },
+
+      { text: 'Proximity operations conclude', met: met(0,4,35,0), label: '~T+4h 35m' },
+      { text: 'ICPS disposal burn', met: met(0,5,2,0), label: 'T+5h 02m' },
+      { text: 'CubeSat deployments begin', met: met(0,5,4,0), label: '~T+5h 04m' }
     ],
 
     isKeyMilestone: false,
@@ -866,12 +1115,12 @@ const STAGES = [
     metEndSeconds: MET_TLI_START,
     description: 'Over approximately 17 hours in high Earth orbit, the crew verifies life support systems (air, water, CO₂ removal), communications, navigation, and radiation monitoring. Includes first meals, exercise, sleep periods, and Deep Space Network comm tests before TLI.',
     activities: [
-      'ECLSS checkouts: air, water, CO₂ removal, toilet',
-      'Deep Space Network emergency comms test',
-      'Crew sleep period (~4–4.5 hours split)',
-      'Pre-TLI geometry burn (Orion PRB)',
-      'Optical navigation checkout',
-      'Final preparations for Trans-Lunar Injection'
+
+      { text: 'Deep Space Network emergency comms test', met: met(0,10,6,0), label: '~T+10h 06m' },
+
+      { text: 'Pre-TLI geometry burn (Orion PRB)', met: met(0,13,30,0), label: 'T+13h 30m' },
+      { text: 'Optical navigation checkout', met: met(0,14,15,0), label: 'T+14h 15m' },
+
     ],
 
     isKeyMilestone: false,
@@ -897,11 +1146,9 @@ const STAGES = [
     metEndSeconds: MET_OUTBOUND_START,
     description: 'The European Service Module\'s main engine fires for approximately 5–6 minutes, accelerating Orion to escape Earth orbit and setting the free-return trajectory toward the Moon. This is the last major engine firing of the Artemis II mission.',
     activities: [
-      'Christina Koch prepares ESM main engine burn',
-      'TLI burn: ~5–6 minutes',
-      'Orion escapes Earth orbit onto lunar free-return trajectory',
-      'Post-TLI adaptation; lighter schedule',
-      'First video communication with ground teams'
+
+      { text: 'TLI burn: ~5–6 minutes', met: met(1,1,8,42), label: 'T+25h 08m' },
+
     ],
 
     isKeyMilestone: true,
@@ -924,15 +1171,13 @@ const STAGES = [
     metEndSeconds: MET_LUNAR_FLYBY_START,
     description: 'A ~4-day coast toward the Moon with three outbound trajectory correction burns to refine the path. The crew conducts medical demonstrations, suit checks, media events, lunar observation rehearsals, and enters the lunar sphere of influence on Flight Day 5.',
     activities: [
-      'OTC-1: first outbound correction (Flight Day 3)',
-      'CPR demonstration in microgravity',
-      'Medical kit checkout (thermometer, BP, stethoscope)',
-      'DSN emergency communications test',
-      'OTC-2: second outbound correction (Flight Day 4)',
-      'Lunar geography target review and celestial photography',
-      'OTC-3: final outbound correction (Flight Day 5)',
-      'Spacesuit donning, pressurization, and function tests',
-      'Entry into lunar sphere of influence'
+      { text: 'OTC-1: first outbound correction (FD3)', met: met(2,1,8,42), label: 'T+49h 08m' },
+
+      { text: 'OTC-2: second outbound correction (FD4)', met: met(3,1,8,42), label: 'T+73h 08m' },
+
+      { text: 'OTC-3: final outbound correction (FD5)', met: met(4,4,29,52), label: 'T+100h 30m' },
+
+      { text: 'Entry into lunar sphere of influence', met: met(4,6,38,0), label: 'T+102h 38m' }
     ],
 
     isKeyMilestone: false,
@@ -958,12 +1203,9 @@ const STAGES = [
     metEndSeconds: MET_RETURN_COAST_START,
     description: 'Orion flies within 4,000–6,500 miles of the Moon\'s far side — the farthest humans have ever traveled from Earth at 250,000+ miles. The crew photographs lunar geological features, observes Earthrise, and experiences 30–50 minutes of radio blackout behind the Moon.',
     activities: [
-      'Lunar close approach: ~4,000–6,500 mi from surface',
-      'Maximum Earth distance: 250,000+ mi',
-      '30–50 minute communications blackout behind Moon',
-      'Lunar surface photography and video',
-      'Real-time geological observations',
-      'Earthrise observation and documentation'
+      { text: 'Lunar close approach: ~4,000–6,500 mi from surface', met: met(5,0,29,59), label: 'T+120h 30m' },
+      { text: 'Maximum Earth distance: 250,000+ mi', met: met(5,0,35,0), label: 'T+120h 35m' },
+
     ],
 
     isKeyMilestone: true,
@@ -987,16 +1229,16 @@ const STAGES = [
     metEndSeconds: MET_CM_SM_SEP_START,
     description: 'A ~4-day return journey with three correction burns. The crew builds a radiation shelter demonstration, performs manual piloting tests, conducts reentry preparation, physiological studies, and garment assessments for post-landing orthostatic intolerance.',
     activities: [
-      'Lunar SOI exit (Flight Day 7 morning)',
-      'Scientists debrief crew on lunar observations',
-      'RTC-1: first return correction (Flight Day 7)',
-      'Radiation shelter construction demo (Flight Day 8)',
-      'Manual piloting demonstrations (Flight Day 8)',
-      'RTC-2: second return correction (Flight Day 9)',
-      'Orthostatic intolerance garment assessments',
-      'Reentry and splashdown procedure study',
-      'RTC-3: final return correction (Flight Day 10)',
-      'Entry checklist and spacesuit donning begins'
+      { text: 'Lunar SOI exit (FD7 morning)', met: met(5,18,53,0), label: 'T+138h 53m' },
+
+      { text: 'RTC-1: first return correction (FD7)', met: met(6,1,29,52), label: 'T+145h 30m' },
+      { text: 'Radiation shelter construction demo (FD8)', met: met(7,1,50,0), label: 'T+169h 50m' },
+      { text: 'Manual piloting demonstrations (FD8)', met: met(7,4,20,0), label: 'T+172h 20m' },
+      { text: 'RTC-2: second return correction (FD9)', met: met(8,4,29,10), label: 'T+196h 29m' },
+      { text: 'Orthostatic intolerance garment assessments', met: met(7,23,15,0), label: 'T+191h 15m' },
+
+      { text: 'RTC-3: final return correction (FD10)', met: met(8,20,29,10), label: 'T+212h 29m' },
+      { text: 'Entry checklist and spacesuit donning begins', met: met(8,22,30,0), label: 'T+214h 30m' }
     ],
 
     isKeyMilestone: false,
@@ -1022,10 +1264,10 @@ const STAGES = [
     metEndSeconds: MET_REENTRY_START,
     description: 'Approximately 20 minutes before reentry, the Orion Crew Module separates from the European Service Module, which is disposed of. A final small burn adjusts the reentry angle for precise atmospheric entry.',
     activities: [
-      'CM/SM separation at MET 9/01:09:00',
-      'Service module disposal',
-      'Crew module raise burn to adjust reentry angle',
-      'Final attitude alignment for entry interface'
+      { text: 'CM/SM separation', met: met(9,1,9,0), label: 'T+217h 09m' },
+
+      { text: 'Crew module raise burn to adjust reentry angle', met: met(9,1,16,0), label: 'T+217h 16m' },
+
     ],
 
     isKeyMilestone: false,
@@ -1048,12 +1290,8 @@ const STAGES = [
     metEndSeconds: MET_SPLASHDOWN_START,
     description: 'Orion\'s Crew Module enters Earth\'s atmosphere at approximately 25,000 mph. The heat shield endures temperatures of ~5,000°F during roughly 10 minutes of plasma blackout before parachute deployment slows the capsule for splashdown.',
     activities: [
-      'Entry interface at ~400,000 ft altitude',
-      'Heat shield temperatures reach ~5,000°F (2,760°C)',
-      '~10 minutes of plasma communications blackout',
-      'Forward bay cover jettison',
-      'Drogue parachutes deploy (~25,000 ft)',
-      'Main parachutes deploy (~9,500 ft)'
+      { text: 'Entry interface at ~400,000 ft altitude', met: met(9,1,29,0), label: 'T+217h 29m' },
+
     ],
 
     isKeyMilestone: false,
@@ -1076,11 +1314,10 @@ const STAGES = [
     metEndSeconds: MET_MISSION_END,
     description: 'Orion splashes down in the Pacific Ocean off San Diego, California at approximately 17 mph under three main parachutes. U.S. Navy recovery teams retrieve the crew and capsule, completing the first crewed Artemis mission.',
     activities: [
-      'Splashdown in Pacific Ocean off San Diego, CA',
-      'Landing speed: ~17 mph under 3 main parachutes',
-      'U.S. Navy recovery teams retrieve crew and capsule',
-      'Crew module RCS safing',
-      'Orion final power down'
+      { text: 'Splashdown in Pacific Ocean off San Diego, CA', met: met(9,1,42,48), label: 'T+217h 43m' },
+
+      { text: 'Crew module RCS safing', met: met(9,1,53,0), label: 'T+217h 53m' },
+      { text: 'Orion final power down', met: met(9,2,1,0), label: 'T+218h 01m' }
     ],
 
     isKeyMilestone: true,
@@ -1118,8 +1355,11 @@ function resizeCanvas() {
   canvas.width = canvasW * dpr;
   canvas.height = canvasH * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  // Invalidate path cache on resize
+  // Rescale segment configs and invalidate path cache on resize
   missionPathCache = null;
+  if (AUTHORED_SEGMENTS && AUTHORED_SEGMENTS.length > 0) {
+    initSegmentConfigs();
+  }
 }
 
 // --- Seeded PRNG for stable starfield ---
@@ -1132,41 +1372,33 @@ function mulberry32(seed) {
   };
 }
 
-// --- Starfield ---
-const STAR_COUNT = 200;
-const TWINKLE_COUNT = 15;
+// --- Starfield (static dots, don't zoom, cover extended area) ---
+const STAR_COUNT = 400;
 let stars = [];
 
 function generateStars() {
   const rng = mulberry32(42);
   stars = [];
+  // Generate stars over a 3x3 area (centered) so panning never runs out
   for (let i = 0; i < STAR_COUNT; i++) {
     stars.push({
-      x: rng(),          // 0-1 normalized
-      y: rng(),
-      size: 0.5 + rng() * 1.5,
-      baseBrightness: 0.3 + rng() * 0.7,
-      brightness: 0,
-      twinkle: i < TWINKLE_COUNT,
-      twinkleRate: 0.0005 + rng() * 0.002,
-      twinkleOffset: rng() * Math.PI * 2
+      x: -1 + rng() * 3,   // -1 to 2 (normalized, covers pan range)
+      y: -1 + rng() * 3,
+      size: 0.5 + rng() * 1.0,
+      brightness: 0.2 + rng() * 0.5
     });
   }
 }
 generateStars();
 
 function updateStarfield(timestamp) {
-  for (const star of stars) {
-    if (star.twinkle) {
-      star.brightness = star.baseBrightness *
-        (0.6 + 0.4 * Math.sin(timestamp * star.twinkleRate + star.twinkleOffset));
-    } else {
-      star.brightness = star.baseBrightness;
-    }
-  }
+  // No-op — stars are static dots
 }
 
 function drawStarfield() {
+  // Draw at screen pixels, ignoring pan/zoom (stars feel infinitely far away)
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // reset to screen coords
   for (const star of stars) {
     ctx.globalAlpha = star.brightness;
     ctx.fillStyle = '#ffffff';
@@ -1175,6 +1407,9 @@ function drawStarfield() {
     ctx.fill();
   }
   ctx.globalAlpha = 1;
+  ctx.restore();
+  // Re-apply pan/zoom for everything after
+  applyPanZoom();
 }
 
 // --- Earth rendering ---
@@ -1219,11 +1454,11 @@ function drawEarth(cx, cy, radius) {
   const kscY = cy + radius * 0.7 * Math.sin(kscAngle - 0.8);
   ctx.beginPath();
   ctx.arc(kscX, kscY, 2, 0, Math.PI * 2);
-  ctx.fillStyle = '#39ff14';
+  ctx.fillStyle = 'rgba(200, 200, 208, 0.5)';
   ctx.fill();
-  // KSC label
+  // KSC label (gray)
   ctx.font = `${Math.max(8, canvasH * 0.018)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
-  ctx.fillStyle = 'rgba(57, 255, 20, 0.6)';
+  ctx.fillStyle = 'rgba(200, 200, 208, 0.4)';
   ctx.fillText('KSC', kscX + 5, kscY + 3);
 
   // "Earth" label below
@@ -1307,149 +1542,154 @@ const MISSION_MILESTONES = [
   { met: TICK_SPLASHDOWN,         u: 1.00,  label: 'Splashdown', showLabel: 'always' }
 ];
 
+// Segment-based u mapping: each of the 11 stages maps to an equal u slice.
+// Stage 0 = u [0, 1/11], Stage 1 = u [1/11, 2/11], etc.
+// Within each stage, MET progress maps linearly along the segment.
+
+function getStageURange(stage) {
+  const idx = STAGES.findIndex(s => s.id === stage.id);
+  if (idx < 0) return [0, 1];
+  const n = STAGES.length;
+  return [idx / n, (idx + 1) / n];
+}
+
 function metToU(metSeconds) {
-  if (metSeconds <= MISSION_MILESTONES[0].met) return 0;
-  if (metSeconds >= MISSION_MILESTONES[MISSION_MILESTONES.length - 1].met) return 1;
-  for (let i = 1; i < MISSION_MILESTONES.length; i++) {
-    if (metSeconds <= MISSION_MILESTONES[i].met) {
-      const prev = MISSION_MILESTONES[i - 1];
-      const curr = MISSION_MILESTONES[i];
-      const frac = (metSeconds - prev.met) / (curr.met - prev.met);
-      return prev.u + frac * (curr.u - prev.u);
+  // Find which stage this MET falls in
+  for (let i = 0; i < STAGES.length; i++) {
+    const s = STAGES[i];
+    if (metSeconds < s.metEndSeconds || i === STAGES.length - 1) {
+      const [uStart, uEnd] = getStageURange(s);
+      const stageDuration = s.metEndSeconds - s.metSeconds;
+      const elapsed = metSeconds - s.metSeconds;
+      const frac = stageDuration > 0 ? Math.max(0, Math.min(1, elapsed / stageDuration)) : 0;
+      return uStart + frac * (uEnd - uStart);
     }
   }
   return 1;
 }
 
-function getStageURange(stage) {
-  return [metToU(stage.metSeconds), metToU(stage.metEndSeconds)];
-}
+// ============================================================
+// MISSION PATH (legacy fallback — segment configs are the primary path source)
+// ============================================================
 
-// ============================================================
-// CATMULL-ROM SPLINE UTILITY
-// ============================================================
-function catmullRom(p0, p1, p2, p3, t) {
-  const t2 = t * t, t3 = t2 * t;
-  return {
-    x: 0.5 * ((2*p1.x) + (-p0.x+p2.x)*t + (2*p0.x-5*p1.x+4*p2.x-p3.x)*t2 + (-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
-    y: 0.5 * ((2*p1.y) + (-p0.y+p2.y)*t + (2*p0.y-5*p1.y+4*p2.y-p3.y)*t2 + (-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
-  };
-}
-
-function catmullRomChain(points, samplesPerSeg) {
-  const samples = [];
-  const n = points.length;
-  for (let i = 0; i < n - 1; i++) {
-    const p0 = points[Math.max(0, i - 1)];
-    const p1 = points[i];
-    const p2 = points[Math.min(n - 1, i + 1)];
-    const p3 = points[Math.min(n - 1, i + 2)];
-    const steps = (i === n - 2) ? samplesPerSeg : samplesPerSeg; // uniform
-    for (let j = 0; j < steps; j++) {
-      const t = j / steps;
-      samples.push(catmullRom(p0, p1, p2, p3, t));
-    }
-  }
-  // Add the very last point
-  samples.push(points[n - 1]);
-  return samples;
-}
-
-// ============================================================
-// MISSION PATH — clean figure-8 via Catmull-Rom through waypoints
-// ============================================================
 class MissionPath {
   constructor(layout) {
-    const { earthCx, earthCy, earthR, moonCx, moonCy, moonR } = layout;
+    const { earthCx: cx, earthCy, earthR, moonCy, moonR } = layout;
 
-    // Two-lobe free-return trajectory:
-    // Small Earth lobe (top) + narrow throat + large cislunar lobe (bottom)
-    const cx = earthCx;  // centered vertical axis (Earth and Moon aligned)
-    const lobeR = earthR * 1.8;                          // Earth lobe radius
-    const legOffset = canvasW * 0.09;                     // lateral offset for outbound/return (~9% width)
-    const throatY = earthCy + lobeR + earthR * 0.8;      // throat position just below Earth lobe
-    const lunarLoopR = moonR * 3.5;                       // lunar loop tightness
+    // --- Geometry parameters ---
+    const earthLobeR = earthR * 1.5;                       // Earth orbit lobe radius
+    const moonLobeR = Math.max(moonR * 4.5, canvasH * 0.07); // Moon flyby lobe radius
+    // Waist at 75% of the way from Earth to Moon (pinch near the Moon)
+    const waist = { x: cx, y: earthCy + 0.75 * (moonCy - earthCy) };
 
-    // Interpolation helpers for vertical leg positions
-    const legTop = throatY + canvasH * 0.03;             // just below throat
-    const legMid = (throatY + moonCy) * 0.5;             // midway between throat and Moon
-    const legBot = moonCy - lunarLoopR - moonR * 2;      // approaching Moon
+    // --- Earth circle angles (screen coords: 0=right, π/2=down, π=left, 3π/2=up) ---
+    const kscAngle = 0.35;                                 // KSC start (right, slightly below)
+    const earthExitAngle = 2.4;                            // exit lower-left (~137°)
+    // Go clockwise (increasing angle) for ~1.2 revolutions
+    const earthEndAngle = kscAngle + Math.PI * 2 + (earthExitAngle - kscAngle);
 
-    // ---- Waypoint chain: the path passes THROUGH each of these ----
-    this._waypoints = [
-      // === SMALL EARTH LOBE (wp 0-4) ===
-      { x: cx + earthR * 0.7,     y: earthCy + earthR * 0.5 },   // 0: KSC / liftoff
-      { x: cx + lobeR,            y: earthCy },                    // 1: LEO right
-      { x: cx,                    y: earthCy - lobeR },            // 2: HEO apex (top of lobe)
-      { x: cx - lobeR,            y: earthCy },                    // 3: HEO left
-      { x: cx - lobeR * 0.5,     y: earthCy + lobeR * 0.8 },     // 4: approaching throat (left side)
+    // --- Moon circle angles ---
+    // Entrance upper-left, exit upper-right, arc goes through bottom (closest approach)
+    const moonEntAngle = Math.PI + 0.5;                    // upper-left (~209° → x left, y up)
+    const moonExitAngle = -(0.5);                          // upper-right → same as 2π-0.5
+    // Arc goes counterclockwise (decreasing angle) through bottom: π+0.5 → π → π/2(bottom) → 0 → -0.5
 
-      // === THROAT — TLI EXIT (wp 5) ===
-      { x: cx - legOffset * 0.8,  y: throatY },                   // 5: TLI departure (slightly left)
+    // --- Sample the 5 pieces ---
 
-      // === OUTBOUND LEG — LEFT SIDE (wp 6-8) ===
-      { x: cx - legOffset,        y: legTop + (legMid - legTop) * 0.33 }, // 6: OTC-1 zone
-      { x: cx - legOffset * 1.1,  y: legMid },                            // 7: OTC-2/3 zone
-      { x: cx - legOffset * 0.8,  y: legBot },                            // 8: Lunar SOI approach
+    // PIECE 1: Earth circle (~1.2 revolutions clockwise)
+    const earthArc = this._sampleArc(cx, earthCy, earthLobeR, kscAngle, earthEndAngle, 100);
+    const exitPt = earthArc[earthArc.length - 1];
 
-      // === LUNAR LOOP — AROUND MOON FAR SIDE (wp 9-11) ===
-      { x: cx - lunarLoopR,       y: moonCy + moonR * 0.5 },     // 9: approach from left
-      { x: cx,                    y: moonCy + lunarLoopR },       // 10: closest approach (below Moon)
-      { x: cx + lunarLoopR,       y: moonCy + moonR * 0.5 },     // 11: depart to right
+    // PIECE 2: Outbound curve (Earth exit → waist → Moon entrance)
+    // Quadratic bezier with control point computed so curve passes through waist at t=0.5
+    const moonEntPt = {
+      x: cx + moonLobeR * Math.cos(moonEntAngle),
+      y: moonCy + moonLobeR * Math.sin(moonEntAngle)
+    };
+    const outboundCtrl = {
+      x: 2 * waist.x - 0.5 * exitPt.x - 0.5 * moonEntPt.x,
+      y: 2 * waist.y - 0.5 * exitPt.y - 0.5 * moonEntPt.y
+    };
+    const outbound = this._sampleQuadBezier(exitPt, outboundCtrl, moonEntPt, 80);
 
-      // === RETURN LEG — RIGHT SIDE (wp 12-14) ===
-      { x: cx + legOffset * 0.8,  y: legBot },                            // 12: SOI exit zone
-      { x: cx + legOffset * 1.1,  y: legMid },                            // 13: RTC-1/2 zone
-      { x: cx + legOffset,        y: legTop + (legMid - legTop) * 0.33 }, // 14: RTC-3 zone
+    // PIECE 3: Moon circle (~270° counterclockwise through bottom)
+    const moonArc = this._sampleArc(cx, moonCy, moonLobeR, moonEntAngle, moonExitAngle, 60);
+    const moonExitPt = moonArc[moonArc.length - 1];
 
-      // === THROAT — RETURN ENTRY (wp 15) ===
-      { x: cx + lobeR * 0.5,      y: earthCy + lobeR * 0.8 },    // 15: return enters Earth lobe (right side)
+    // PIECE 4: Return curve (Moon exit → waist → Earth approach)
+    const approachPt = {
+      x: cx + earthLobeR * 0.65,
+      y: earthCy + earthLobeR * 0.75
+    };
+    const returnCtrl = {
+      x: 2 * waist.x - 0.5 * moonExitPt.x - 0.5 * approachPt.x,
+      y: 2 * waist.y - 0.5 * moonExitPt.y - 0.5 * approachPt.y
+    };
+    const returnCurve = this._sampleQuadBezier(moonExitPt, returnCtrl, approachPt, 80);
 
-      // === FINAL APPROACH (wp 16-17) ===
-      { x: cx + lobeR * 0.8,      y: earthCy + earthR * 0.3 },   // 16: CM/SM sep / reentry approach
-      { x: cx + earthR * 0.4,     y: earthCy + earthR * 0.7 }    // 17: splashdown
+    // PIECE 5: Landing (short straight line to splashdown)
+    const splashPt = { x: cx + earthR * 0.3, y: earthCy + earthR * 0.55 };
+    const landing = this._sampleStraight(approachPt, splashPt, 10);
+
+    // --- Build segments with u ranges ---
+    this.segments = [
+      { uStart: 0.00, uEnd: 0.08, points: earthArc },
+      { uStart: 0.08, uEnd: 0.45, points: outbound },
+      { uStart: 0.45, uEnd: 0.55, points: moonArc },
+      { uStart: 0.55, uEnd: 0.97, points: returnCurve },
+      { uStart: 0.97, uEnd: 1.00, points: landing }
     ];
-
-    // Sample the Catmull-Rom chain densely
-    this._rawSamples = catmullRomChain(this._waypoints, 60);
-
-    // Build arc-length parameterization
-    this._lengths = [0];
-    this._totalLength = 0;
-    for (let i = 1; i < this._rawSamples.length; i++) {
-      const dx = this._rawSamples[i].x - this._rawSamples[i-1].x;
-      const dy = this._rawSamples[i].y - this._rawSamples[i-1].y;
-      this._totalLength += Math.sqrt(dx * dx + dy * dy);
-      this._lengths.push(this._totalLength);
-    }
   }
 
-  // Arc-length parameterized: u in [0,1] → uniform position along path
-  _uToIndex(u) {
-    u = Math.max(0, Math.min(1, u));
-    const targetLen = u * this._totalLength;
-    // Binary search
-    let lo = 0, hi = this._rawSamples.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (this._lengths[mid] < targetLen) lo = mid + 1;
-      else hi = mid;
+  _sampleArc(cx, cy, r, startAngle, endAngle, steps) {
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const angle = startAngle + (endAngle - startAngle) * (i / steps);
+      pts.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) });
     }
-    if (lo === 0) return { index: 0, frac: 0 };
-    const segStart = this._lengths[lo - 1];
-    const segEnd = this._lengths[lo];
-    const frac = (segEnd - segStart) < 0.0001 ? 0 : (targetLen - segStart) / (segEnd - segStart);
-    return { index: lo - 1, frac };
+    return pts;
+  }
+
+  _sampleQuadBezier(p0, ctrl, p2, steps) {
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const mt = 1 - t;
+      pts.push({
+        x: mt * mt * p0.x + 2 * mt * t * ctrl.x + t * t * p2.x,
+        y: mt * mt * p0.y + 2 * mt * t * ctrl.y + t * t * p2.y
+      });
+    }
+    return pts;
+  }
+
+  _sampleStraight(a, b, steps) {
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      pts.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+    }
+    return pts;
   }
 
   getPoint(u) {
-    const { index, frac } = this._uToIndex(u);
-    const a = this._rawSamples[index];
-    const b = this._rawSamples[Math.min(index + 1, this._rawSamples.length - 1)];
-    return {
-      x: a.x + (b.x - a.x) * frac,
-      y: a.y + (b.y - a.y) * frac
-    };
+    u = Math.max(0, Math.min(1, u));
+    for (const seg of this.segments) {
+      if (u <= seg.uEnd || seg === this.segments[this.segments.length - 1]) {
+        const localT = seg.uEnd > seg.uStart
+          ? Math.max(0, Math.min(1, (u - seg.uStart) / (seg.uEnd - seg.uStart)))
+          : 0;
+        const idx = localT * (seg.points.length - 1);
+        const i = Math.min(Math.floor(idx), seg.points.length - 2);
+        const frac = idx - i;
+        return {
+          x: seg.points[i].x + (seg.points[i + 1].x - seg.points[i].x) * frac,
+          y: seg.points[i].y + (seg.points[i + 1].y - seg.points[i].y) * frac
+        };
+      }
+    }
+    const last = this.segments[this.segments.length - 1];
+    return last.points[last.points.length - 1];
   }
 
   getTangent(u) {
@@ -1483,12 +1723,71 @@ class MissionPath {
 
 function getMissionPath() {
   if (!missionPathCache || missionPathCache._cw !== canvasW || missionPathCache._ch !== canvasH) {
-    const layout = getUnifiedLayout();
-    missionPathCache = new MissionPath(layout);
+    if (segmentConfigs.length > 0) {
+      // Build from segment configs (authored or editor)
+      missionPathCache = buildPathFromConfigs();
+    } else {
+      const layout = getUnifiedLayout();
+      missionPathCache = new MissionPath(layout);
+    }
     missionPathCache._cw = canvasW;
     missionPathCache._ch = canvasH;
   }
   return missionPathCache;
+}
+
+function buildPathFromConfigs() {
+  // Build a MissionPath-like object from segmentConfigs
+  const segments = segmentConfigs.map((cfg, i) => {
+    const uStart = i / segmentConfigs.length;
+    const uEnd = (i + 1) / segmentConfigs.length;
+    const points = sampleSegment(cfg, 50);
+    return { uStart, uEnd, points };
+  });
+  // Return object with same API as MissionPath
+  return {
+    segments,
+    getPoint(u) {
+      u = Math.max(0, Math.min(1, u));
+      for (const seg of this.segments) {
+        if (u <= seg.uEnd || seg === this.segments[this.segments.length - 1]) {
+          const localT = seg.uEnd > seg.uStart
+            ? Math.max(0, Math.min(1, (u - seg.uStart) / (seg.uEnd - seg.uStart)))
+            : 0;
+          const idx = localT * (seg.points.length - 1);
+          const i = Math.min(Math.floor(idx), seg.points.length - 2);
+          const frac = idx - i;
+          return {
+            x: seg.points[i].x + (seg.points[i + 1].x - seg.points[i].x) * frac,
+            y: seg.points[i].y + (seg.points[i + 1].y - seg.points[i].y) * frac
+          };
+        }
+      }
+      const last = this.segments[this.segments.length - 1];
+      return last.points[last.points.length - 1];
+    },
+    getTangent(u) {
+      const d = 0.003;
+      const p1 = this.getPoint(Math.max(0, u - d));
+      const p2 = this.getPoint(Math.min(1, u + d));
+      return Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    },
+    getSubPath(u0, u1) {
+      const steps = Math.max(20, Math.round(Math.abs(u1 - u0) * 300));
+      const path = new Path2D();
+      for (let i = 0; i <= steps; i++) {
+        const u = u0 + (u1 - u0) * (i / steps);
+        const p = this.getPoint(u);
+        if (i === 0) path.moveTo(p.x, p.y); else path.lineTo(p.x, p.y);
+      }
+      return path;
+    },
+    getTickPosition(u) {
+      const p = this.getPoint(u);
+      const angle = this.getTangent(u);
+      return { x: p.x, y: p.y, angle: angle + Math.PI / 2 };
+    }
+  };
 }
 
 // --- Milestone validation (dev tool — call from console) ---
@@ -1528,7 +1827,7 @@ const TRAIL_INTERVAL = 50;
 let lastTrailTime = 0;
 
 function computeMarkerPosition() {
-  const now = Date.now();
+  const now = getEffectiveNow();
   const elapsedSec = (now - T0.getTime()) / 1000;
   markerU = metToU(elapsedSec);
 }
@@ -1555,20 +1854,8 @@ function updateMarkerTrail(timestamp) {
 // --- Draw live marker (lime green dot + glow + trail) ---
 function drawMarker(x, y) {
   ctx.save();
-  ctx.shadowColor = '#39ff14';
-  ctx.shadowBlur = 12;
-  ctx.beginPath();
-  ctx.arc(x, y, 4, 0, Math.PI * 2);
-  ctx.fillStyle = '#39ff14';
-  ctx.fill();
-  ctx.shadowBlur = 0;
 
-  ctx.beginPath();
-  ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.fill();
-  ctx.restore();
-
+  // Trail
   for (let i = 0; i < markerTrail.length; i++) {
     const alpha = 0.15 + 0.15 * (i / markerTrail.length);
     const size = 1.5 + 1.0 * (i / markerTrail.length);
@@ -1577,93 +1864,178 @@ function drawMarker(x, y) {
     ctx.fillStyle = `rgba(57, 255, 20, ${alpha})`;
     ctx.fill();
   }
+
+  // Glow dot
+  ctx.shadowColor = '#39ff14';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.arc(x, y, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#39ff14';
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // White center
+  ctx.beginPath();
+  ctx.arc(x, y, 2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.fill();
+
+  // Triangle dorito pointing down at the dot
+  const triSize = 8;
+  const triY = y - 14;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 8);           // bottom point (near dot)
+  ctx.lineTo(x - triSize, triY - triSize);  // top-left
+  ctx.lineTo(x + triSize, triY - triSize);  // top-right
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(57, 255, 20, 0.8)';
+  ctx.fill();
+
+  // "LIVE" text above triangle
+  ctx.font = `bold ${Math.max(9, canvasH * 0.016)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
+  ctx.fillStyle = '#39ff14';
+  ctx.textAlign = 'center';
+  ctx.fillText('LIVE', x, triY - triSize - 4);
+
+  ctx.restore();
 }
 
 // --- Draw ghost marker (azure hollow ring at selected stage) ---
 function drawGhostMarker(x, y) {
+  // Color matches the selected tab's state
+  const selIdx = STAGES.findIndex(s => s.id === selectedStageId);
+  const state = getStageColorState(selIdx);
+  const color = getStateColor(state, 0.6);
+  const glowColor = getStateColor(state, 0.15);
+
   ctx.save();
   ctx.beginPath();
   ctx.arc(x, y, 7, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(0, 127, 255, 0.6)';
+  ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.stroke();
   // Inner subtle glow
   ctx.beginPath();
   ctx.arc(x, y, 10, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(0, 127, 255, 0.15)';
+  ctx.strokeStyle = glowColor;
   ctx.lineWidth = 3;
   ctx.stroke();
   ctx.restore();
 }
 
 // --- Draw traveled vs upcoming path ---
+function getStageColorState(stageIdx) {
+  const liveIdx = STAGES.findIndex(s => s.id === liveStageId);
+  if (stageIdx < liveIdx) return 'past';
+  if (stageIdx === liveIdx) return 'current';
+  if (stageIdx === liveIdx + 1) return 'next'; // still tracked for NEXT badge, but uses future color
+  return 'future';
+}
+
+// 3-color system: dark blue (past), green (current), bright blue (future/next)
+function getStateColor(state, alpha) {
+  if (state === 'past') return `rgba(42, 108, 199, ${alpha})`;
+  if (state === 'current') return `rgba(57, 255, 20, ${alpha})`;
+  return `rgba(111, 168, 255, ${alpha})`; // future + next
+}
+
+function getStateCSSColor(state) {
+  if (state === 'past') return '#2a6cc7';
+  if (state === 'current') return '#39ff14';
+  return '#6fa8ff'; // future + next
+}
+
 function drawTraveledPath(path, liveU) {
-  ctx.save();
-  if (liveU > 0.001) {
-    const traveled = path.getSubPath(0, Math.min(liveU, 1));
-    ctx.strokeStyle = 'rgba(187, 134, 252, 0.65)';  // light purple for traveled
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    ctx.stroke(traveled);
-  }
-  if (liveU < 0.999) {
-    const upcoming = path.getSubPath(Math.max(liveU, 0), 1);
-    ctx.strokeStyle = 'rgba(0, 127, 255, 0.18)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([8, 5]);
-    ctx.stroke(upcoming);
-    ctx.setLineDash([]);
-  }
-  ctx.restore();
-}
+  // Draw each stage segment in its color. Past=solid, current=solid+dashed, future=dashed.
+  // Selected stage = thicker.
+  const selectedIdx = STAGES.findIndex(s => s.id === selectedStageId);
 
-// --- Draw leg highlight for selected stage ---
-function drawLegHighlight(path, startU, endU) {
-  if (endU - startU < 0.001) return;
   ctx.save();
-  const leg = path.getSubPath(startU, endU);
-  ctx.strokeStyle = 'rgba(0, 127, 255, 0.45)';
-  ctx.lineWidth = 5;
-  ctx.setLineDash([]);
-  ctx.stroke(leg);
-  ctx.restore();
-}
+  for (let i = 0; i < STAGES.length; i++) {
+    const [segStartU, segEndU] = getStageURange(STAGES[i]);
+    const state = getStageColorState(i);
+    const isSelected = i === selectedIdx;
+    const baseWidth = isSelected ? 4 : 2;
 
-// --- Draw tick marks from MISSION_MILESTONES (stage-aware labels) ---
-function drawMissionTicks(path) {
-  if (!currentScene) return;
-  const [stageStartU, stageEndU] = getStageURange(currentScene.stage);
-  const font = `${Math.max(7, canvasH * 0.014)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
-  ctx.save();
-  ctx.font = font;
+    if (state === 'past') {
+      // Solid purple
+      const seg = path.getSubPath(segStartU, segEndU);
+      ctx.strokeStyle = getStateColor('past', 0.7);
+      ctx.lineWidth = baseWidth;
+      ctx.setLineDash([]);
+      ctx.stroke(seg);
 
-  // Determine which milestones get labels:
-  // - Milestones within the selected stage's u range
-  // - The nearest milestone before the stage
-  // - The nearest milestone after the stage
-  let beforeMs = null;
-  let afterMs = null;
-  const stageMs = [];
-  for (const ms of MISSION_MILESTONES) {
-    if (ms.u >= stageStartU - 0.001 && ms.u <= stageEndU + 0.001) {
-      stageMs.push(ms);
-    } else if (ms.u < stageStartU) {
-      beforeMs = ms; // keep overwriting — we want the LAST one before
-    } else if (ms.u > stageEndU && !afterMs) {
-      afterMs = ms; // first one after
+    } else if (state === 'current') {
+      // Solid green up to liveU, dashed green for the rest
+      if (liveU > segStartU) {
+        const solidEnd = Math.min(liveU, segEndU);
+        const seg = path.getSubPath(segStartU, solidEnd);
+        ctx.strokeStyle = getStateColor('current', 0.7);
+        ctx.lineWidth = baseWidth;
+        ctx.setLineDash([]);
+        ctx.stroke(seg);
+      }
+      if (liveU < segEndU) {
+        const dashStart = Math.max(liveU, segStartU);
+        const seg = path.getSubPath(dashStart, segEndU);
+        ctx.strokeStyle = getStateColor('current', 0.5);
+        ctx.lineWidth = baseWidth;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke(seg);
+        ctx.setLineDash([]);
+      }
+
+    } else {
+      // Dashed bright blue (both next and future)
+      const seg = path.getSubPath(segStartU, segEndU);
+      ctx.strokeStyle = getStateColor('future', 0.45);
+      ctx.lineWidth = baseWidth;
+      ctx.setLineDash([7, 5]);
+      ctx.stroke(seg);
+      ctx.setLineDash([]);
     }
   }
-  const labelSet = new Set(stageMs);
-  if (beforeMs) labelSet.add(beforeMs);
-  if (afterMs) labelSet.add(afterMs);
+  ctx.restore();
+}
 
+// --- Draw stage titles at segment midpoints + sub-stage ticks ---
+function drawMissionTicks(path) {
+  if (!currentScene) return;
+  const [selStartU, selEndU] = getStageURange(currentScene.stage);
+  const selectedIdx = STAGES.findIndex(s => s.id === selectedStageId);
   const drawnLabels = [];
 
-  for (const ms of MISSION_MILESTONES) {
-    const pos = path.getTickPosition(ms.u);
+  ctx.save();
+
+  // 1. Draw stage title at midpoint — only for the selected stage
+  if (selectedIdx >= 0) {
+    const titleFont = `bold ${Math.max(9, canvasH * 0.016)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
+    ctx.font = titleFont;
+    ctx.textAlign = 'center';
+    const [uStart, uEnd] = getStageURange(STAGES[selectedIdx]);
+    const midU = (uStart + uEnd) / 2;
+    const midPt = path.getPoint(midU);
+    const state = getStageColorState(selectedIdx);
+    const color = getStateCSSColor(state);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(STAGES[selectedIdx].name, midPt.x, midPt.y - 12);
+    drawnLabels.push({ x: midPt.x, y: midPt.y - 12 });
+    ctx.globalAlpha = 1;
+  }
+
+  // 2. Draw sub-stage milestone labels (only for selected stage)
+  const tickFont = `${Math.max(7, canvasH * 0.013)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
+  ctx.font = tickFont;
+
+  const msWithU = MISSION_MILESTONES.map(ms => ({ ...ms, computedU: metToU(ms.met) }));
+  const stageMs = msWithU.filter(ms => ms.computedU >= selStartU - 0.001 && ms.computedU <= selEndU + 0.001);
+
+  for (const ms of stageMs) {
+    const pos = path.getTickPosition(ms.computedU);
     if (!pos) continue;
 
-    // Tick mark (always drawn)
+    // Tick mark
     const len = 5;
     ctx.beginPath();
     ctx.moveTo(pos.x - len * Math.cos(pos.angle), pos.y - len * Math.sin(pos.angle));
@@ -1672,37 +2044,26 @@ function drawMissionTicks(path) {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Label (only for stage-relevant milestones)
-    if (!labelSet.has(ms)) continue;
-
-    // Earth-lobe suppression: in the crowded zone near Earth, only show
-    // TLI, Splashdown, and the selected stage's own milestones
-    const isEarthLobe = ms.u < 0.10 || ms.u > 0.93;
-    if (isEarthLobe) {
-      const isTLI = ms.label === 'TLI';
-      const isSplashdown = ms.label === 'Splashdown';
-      const inSelected = ms.u >= stageStartU - 0.001 && ms.u <= stageEndU + 0.001;
-      if (!isTLI && !isSplashdown && !inSelected) continue;
-    }
-
+    // Label (gray)
     const labelOff = 10;
     const lx = pos.x + labelOff * Math.cos(pos.angle);
     const ly = pos.y + labelOff * Math.sin(pos.angle);
 
-    // Collision avoidance
     let collides = false;
     for (const prev of drawnLabels) {
       const dx = lx - prev.x, dy = ly - prev.y;
-      if (Math.sqrt(dx * dx + dy * dy) < 24) { collides = true; break; }
+      if (Math.sqrt(dx * dx + dy * dy) < 20) { collides = true; break; }
     }
     if (collides) continue;
 
-    const inStage = stageMs.includes(ms);
-    ctx.fillStyle = inStage ? 'rgba(255, 255, 255, 0.55)' : 'rgba(255, 255, 255, 0.3)';
+    ctx.fillStyle = 'rgba(200, 200, 208, 0.5)';
+    ctx.globalAlpha = 0.7;
     ctx.textAlign = 'center';
     ctx.fillText(ms.label, lx, ly + 3);
+    ctx.globalAlpha = 1;
     drawnLabels.push({ x: lx, y: ly });
   }
+
   ctx.restore();
 }
 
@@ -1711,12 +2072,16 @@ function update(timestamp) {
   updateStarfield(timestamp);
   computeMarkerPosition();
   updateMarkerTrail(timestamp);
+  updateZoomLerp();
 }
 
 function render() {
   if (!currentScene) return;
+  // Reset transform and clear
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, canvasW, canvasH);
 
+  // Starfield drawn at screen coords (doesn't zoom), then re-applies pan/zoom
   drawStarfield();
 
   const layout = getUnifiedLayout();
@@ -1725,9 +2090,7 @@ function render() {
   // Base path: traveled + upcoming (split at live position)
   drawTraveledPath(path, markerU);
 
-  // Leg highlight for selected stage
-  const [legStart, legEnd] = getStageURange(currentScene.stage);
-  drawLegHighlight(path, legStart, legEnd);
+  // (Leg highlight is now integrated into drawTraveledPath via thickness)
 
   // Bodies
   drawEarth(layout.earthCx, layout.earthCy, layout.earthR);
@@ -1747,6 +2110,10 @@ function render() {
   // Live marker (always at current position)
   const livePos = path.getPoint(markerU);
   drawMarker(livePos.x, livePos.y);
+
+  // Debug editor handles
+  drawDebugHourMarks(path);
+  drawDebugHandles();
 }
 
 function startRenderLoop() {
@@ -1770,7 +2137,7 @@ let liveStageId = null;
    Determines which stage is currently active based on system clock.
    ============================================================ */
 function computeLiveStage() {
-  const now = Date.now();
+  const now = getEffectiveNow();
   const elapsedSec = (now - T0.getTime()) / 1000;
 
   let newLiveId = STAGES[0].id; // default: before launch
@@ -1794,26 +2161,25 @@ function computeLiveStage() {
    Moves the pulsing dot and LIVE badge to the current live stage.
    ============================================================ */
 function updateLiveIndicators() {
-  // Strip tabs
-  document.querySelectorAll('.strip-tab').forEach(tab => {
-    tab.classList.toggle('live', tab.dataset.stageId === liveStageId);
-  });
-  // Sidebar tabs
-  document.querySelectorAll('.sidebar-tab').forEach(tab => {
-    tab.classList.toggle('live', tab.dataset.stageId === liveStageId);
-  });
-  // Update past/future classes
-  const now = Date.now();
-  const elapsedSec = (now - T0.getTime()) / 1000;
-  STAGES.forEach(s => {
+  const liveIdx = STAGES.findIndex(s => s.id === liveStageId);
+  const nextIdx = liveIdx + 1;
+
+  STAGES.forEach((s, i) => {
     const stripTab = document.querySelector(`.strip-tab[data-stage-id="${s.id}"]`);
     const sidebarTab = document.querySelector(`.sidebar-tab[data-stage-id="${s.id}"]`);
-    const isPast = elapsedSec >= s.metEndSeconds;
-    const isFuture = elapsedSec < s.metSeconds;
+
+    // Determine 4-color state
+    let state;
+    if (i < liveIdx) state = 'state-past';       // purple
+    else if (i === liveIdx) state = 'state-current'; // green
+    else if (i === nextIdx) state = 'state-next';    // orange
+    else state = 'state-future';                      // blue
+
     [stripTab, sidebarTab].forEach(tab => {
       if (!tab) return;
-      tab.classList.toggle('past', isPast);
-      tab.classList.toggle('future', isFuture);
+      tab.classList.remove('state-past', 'state-current', 'state-next', 'state-future', 'past', 'future', 'live');
+      tab.classList.add(state);
+      tab.classList.toggle('live', i === liveIdx);
     });
   });
 }
@@ -1830,8 +2196,9 @@ function selectStage(stageId) {
   const stage = STAGES.find(s => s.id === stageId);
   if (!stage) return;
 
-  // Update visualization scene
+  // Update visualization scene + zoom to segment
   onStageSelected(stageId);
+  zoomToSegment(stageId);
 
   // Update active tab classes
   document.querySelectorAll('.strip-tab').forEach(tab => {
@@ -1858,13 +2225,9 @@ function selectStage(stageId) {
   // Accordion: description
   document.getElementById('accDescriptionBody').textContent = stage.description;
 
-  // Accordion: activities
+  // Accordion: activities (structured with times)
   const activitiesBody = document.getElementById('accActivitiesBody');
-  if (stage.activities && stage.activities.length > 0) {
-    activitiesBody.innerHTML = '<ul>' + stage.activities.map(a => `<li>${a}</li>`).join('') + '</ul>';
-  } else {
-    activitiesBody.textContent = 'No activities listed for this stage.';
-  }
+  activitiesBody.innerHTML = renderActivities(stage.activities);
 
   // Accordion: technical details
   const techBody = document.getElementById('accTechnicalBody');
@@ -1927,26 +2290,31 @@ function updateTimer() {
   const stage = STAGES.find(s => s.id === selectedStageId);
   if (!stage) return;
 
-  const now = Date.now();
-  const stageStartMs = T0.getTime() + stage.metSeconds * 1000;
-  const diffSeconds = (now - stageStartMs) / 1000;
-
+  const now = getEffectiveNow();
   const timerEl = document.getElementById('hudTimer');
   const labelEl = document.getElementById('hudTimerLabel');
-  timerEl.textContent = formatDuration(diffSeconds);
 
-  if (diffSeconds >= 0) {
-    labelEl.textContent = 'Time since stage start';
-    timerEl.style.color = 'var(--accent)';
+  // Color timer to match selected tab's state color
+  const selIdx = STAGES.findIndex(s => s.id === selectedStageId);
+  const selState = getStageColorState(selIdx);
+  const timerColor = getStateCSSColor(selState);
+  timerEl.style.color = timerColor;
+
+  // Two modes: past/current = mission time, future = countdown
+  const stageStartMs = T0.getTime() + stage.metSeconds * 1000;
+  const isPastOrCurrent = selState === 'past' || selState === 'current';
+
+  if (isPastOrCurrent) {
+    // Show overall mission elapsed time
+    const missionDiff = (now - T0.getTime()) / 1000;
+    timerEl.textContent = formatDuration(missionDiff);
+    labelEl.textContent = 'Current Mission Time:';
   } else {
-    labelEl.textContent = 'Countdown to stage';
-    timerEl.style.color = 'var(--lime)';
+    // Show countdown to stage start
+    const diffSeconds = (now - stageStartMs) / 1000;
+    timerEl.textContent = formatDuration(diffSeconds);
+    labelEl.textContent = 'Countdown to Stage:';
   }
-
-  // Overall mission elapsed time
-  const missionEl = document.getElementById('hudTimerMission');
-  const missionDiff = (now - T0.getTime()) / 1000;
-  missionEl.textContent = 'Mission: ' + formatDuration(missionDiff);
 }
 
 /* ============================================================
@@ -1961,7 +2329,7 @@ function buildTabs() {
     const stripTab = document.createElement('button');
     stripTab.className = 'strip-tab' + (stage.isKeyMilestone ? ' milestone' : '');
     stripTab.dataset.stageId = stage.id;
-    stripTab.innerHTML = `<span class="live-dot"></span><span class="live-badge">LIVE</span><span class="tab-label">${stage.name}</span>`;
+    stripTab.innerHTML = `<span class="live-dot"></span><span class="done-badge">DONE</span><span class="live-badge">LIVE</span><span class="next-badge">NEXT</span><span class="tab-label">${stage.name}</span>`;
     stripTab.addEventListener('click', () => selectStage(stage.id));
     stripScroll.appendChild(stripTab);
 
@@ -1969,7 +2337,7 @@ function buildTabs() {
     const sidebarTab = document.createElement('button');
     sidebarTab.className = 'sidebar-tab' + (stage.isKeyMilestone ? ' milestone' : '');
     sidebarTab.dataset.stageId = stage.id;
-    sidebarTab.innerHTML = `<span class="live-dot"></span><span class="live-badge">LIVE</span><span class="tab-label">${stage.name}</span>`;
+    sidebarTab.innerHTML = `<span class="live-dot"></span><span class="done-badge">DONE</span><span class="live-badge">LIVE</span><span class="next-badge">NEXT</span><span class="tab-label">${stage.name}</span>`;
     sidebarTab.addEventListener('click', () => selectStage(stage.id));
     sidebarTabs.appendChild(sidebarTab);
   });
@@ -1981,13 +2349,26 @@ function buildTabs() {
 function setupArrows() {
   const strip = document.getElementById('stripScroll');
   const scrollAmount = 120;
+  const leftArrow = document.querySelector('.strip-arrow--left');
+  const rightArrow = document.querySelector('.strip-arrow--right');
 
-  document.querySelector('.strip-arrow--left').addEventListener('click', () => {
+  function updateArrowVisibility() {
+    const atStart = strip.scrollLeft <= 5;
+    const atEnd = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 5;
+    leftArrow.style.visibility = atStart ? 'hidden' : 'visible';
+    rightArrow.style.visibility = atEnd ? 'hidden' : 'visible';
+  }
+
+  leftArrow.addEventListener('click', () => {
     strip.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
   });
-  document.querySelector('.strip-arrow--right').addEventListener('click', () => {
+  rightArrow.addEventListener('click', () => {
     strip.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   });
+
+  strip.addEventListener('scroll', updateArrowVisibility);
+  // Initial check after DOM settles
+  requestAnimationFrame(() => requestAnimationFrame(updateArrowVisibility));
 }
 
 /* ============================================================
@@ -2006,13 +2387,788 @@ function scrollStripToLive() {
 /* ============================================================
    INITIALIZATION
    ============================================================ */
+/* ============================================================
+   CANVAS PAN + ZOOM
+   ============================================================ */
+let panX = 0, panY = 0, zoom = 1;
+let isPanning = false, panStartX = 0, panStartY = 0;
+
+function setupPanZoom() {
+  canvas.addEventListener('mousedown', e => {
+    // First: check if we're clicking a debug control point
+    if (debugEditorOpen && segmentConfigs.length > 0) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left - panX) / zoom;
+      const my = (e.clientY - rect.top - panY) / zoom;
+      let bestDist = 15 / zoom;
+      let best = null;
+      segmentConfigs.forEach((cfg, i) => {
+        const checkPt = (pt, key) => {
+          if (!pt) return;
+          const d = Math.sqrt((mx - pt.x) ** 2 + (my - pt.y) ** 2);
+          if (d < bestDist) { bestDist = d; best = { segIdx: i, pointKey: key }; }
+        };
+        if (cfg.type === 'bezier') {
+          if (i === 0) checkPt(cfg.start, 'start');
+          checkPt(cfg.cp1, 'cp1');
+          checkPt(cfg.cp2, 'cp2');
+          checkPt(cfg.end, 'end');
+        } else {
+          checkPt(cfg.end, 'end');
+        }
+      });
+      if (best) {
+        dragTarget = best;
+        return; // don't pan
+      }
+    }
+    // Otherwise: pan (cancel any zoom lerp)
+    cancelZoomLerp();
+    isPanning = true;
+    panStartX = e.clientX - panX;
+    panStartY = e.clientY - panY;
+    canvas.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', e => {
+    if (dragTarget) {
+      // Drag control point
+      const rect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left - panX) / zoom;
+      const my = (e.clientY - rect.top - panY) / zoom;
+      const cfg = segmentConfigs[dragTarget.segIdx];
+      const key = dragTarget.pointKey;
+      if (cfg[key]) {
+        cfg[key].x = mx;
+        cfg[key].y = my;
+      }
+      rebuildPathFromConfigs();
+      renderDebugUI();
+    } else if (isPanning) {
+      panX = e.clientX - panStartX;
+      panY = e.clientY - panStartY;
+      clampPan();
+    }
+  });
+  window.addEventListener('mouseup', () => {
+    isPanning = false;
+    dragTarget = null;
+    canvas.style.cursor = 'default';
+  });
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    cancelZoomLerp();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(0.5, Math.min(3, zoom * delta));
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    panX = mx - (mx - panX) * (newZoom / zoom);
+    panY = my - (my - panY) * (newZoom / zoom);
+    zoom = newZoom;
+    clampPan();
+  }, { passive: false });
+
+  // --- Touch support for mobile ---
+  let touchStartDist = 0;
+  let touchStartZoom = 1;
+  let touchStartPanX = 0, touchStartPanY = 0;
+  let touchStartMidX = 0, touchStartMidY = 0;
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    cancelZoomLerp();
+    if (e.touches.length === 1) {
+      isPanning = true;
+      panStartX = e.touches[0].clientX - panX;
+      panStartY = e.touches[0].clientY - panY;
+    } else if (e.touches.length === 2) {
+      isPanning = false;
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      touchStartDist = Math.sqrt(dx * dx + dy * dy);
+      touchStartZoom = zoom;
+      touchStartPanX = panX;
+      touchStartPanY = panY;
+      touchStartMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      touchStartMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 1 && isPanning) {
+      panX = e.touches[0].clientX - panStartX;
+      panY = e.touches[0].clientY - panStartY;
+      clampPan();
+    } else if (e.touches.length === 2 && touchStartDist > 0) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const scale = dist / touchStartDist;
+      const newZoom = Math.max(0.5, Math.min(3, touchStartZoom * scale));
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const rect = canvas.getBoundingClientRect();
+      const mx = touchStartMidX - rect.left;
+      const my = touchStartMidY - rect.top;
+      panX = mx - (mx - touchStartPanX) * (newZoom / touchStartZoom) + (midX - touchStartMidX);
+      panY = my - (my - touchStartPanY) * (newZoom / touchStartZoom) + (midY - touchStartMidY);
+      zoom = newZoom;
+      clampPan();
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    isPanning = false;
+    touchStartDist = 0;
+  }, { passive: false });
+}
+
+function applyPanZoom() {
+  ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, panX * dpr, panY * dpr);
+}
+
+function clampPan() {
+  // Clamp based on center of viewport — limit how far the view center can drift from scene center
+  const sceneCx = canvasW / 2;
+  const sceneCy = canvasH / 2;
+  // Viewport center in world coordinates
+  const viewCx = (canvasW / 2 - panX) / zoom;
+  const viewCy = (canvasH / 2 - panY) / zoom;
+  // Max distance the view center can be from the scene center
+  const maxDist = canvasH * 0.48;
+  const dx = viewCx - sceneCx;
+  const dy = viewCy - sceneCy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist > maxDist) {
+    const scale = maxDist / dist;
+    const clampedCx = sceneCx + dx * scale;
+    const clampedCy = sceneCy + dy * scale;
+    panX = canvasW / 2 - clampedCx * zoom;
+    panY = canvasH / 2 - clampedCy * zoom;
+  }
+}
+
+/* ============================================================
+   DEBUG PATH EDITOR
+   ============================================================ */
+let debugEditorOpen = false;
+let dragTarget = null; // { segIdx, pointKey }
+let segmentConfigs = []; // array of 11 segment configs
+
+function getStageColor(idx) {
+  const liveIdx = STAGES.findIndex(s => s.id === liveStageId);
+  if (idx < liveIdx) return '#bb86fc';
+  if (idx === liveIdx) return '#39ff14';
+  if (idx === liveIdx + 1) return '#ff9800';
+  return '#007fff';
+}
+
+let debugHighlightPath = false;
+let debugShowHourMarks = false;
+
+// Authored at this canvas size — all coordinates are scaled proportionally to current canvas
+const AUTHORED_W = 1252;
+const AUTHORED_H = 1568;
+const AUTHORED_SEGMENTS = [
+  {"type":"bezier","start":{"x":626.49,"y":113.14},"cp1":{"x":561.88,"y":80.10},"cp2":{"x":489.07,"y":154.33},"end":{"x":472.12,"y":187.75}},
+  {"type":"bezier","start":{"x":472.12,"y":187.75},"cp1":{"x":444.18,"y":242.81},"cp2":{"x":440.81,"y":296.50},"end":{"x":465.53,"y":397.83}},
+  {"type":"bezier","start":{"x":465.53,"y":397.83},"cp1":{"x":495.00,"y":518.68},"cp2":{"x":555.67,"y":573.35},"end":{"x":628.73,"y":571.23}},
+  {"type":"bezier","start":{"x":628.73,"y":571.23},"cp1":{"x":956.37,"y":463.63},"cp2":{"x":763.20,"y":-108.64},"end":{"x":453.82,"y":158.61}},
+  {"type":"bezier","start":{"x":453.82,"y":158.61},"cp1":{"x":349.25,"y":254.48},"cp2":{"x":366.68,"y":396.82},"end":{"x":413.16,"y":504.30}},
+  {"type":"bezier","start":{"x":413.16,"y":504.30},"cp1":{"x":453.82,"y":608.88},"cp2":{"x":627.89,"y":927.69},"end":{"x":696.11,"y":1228.91}},
+  {"type":"bezier","start":{"x":696.11,"y":1228.91},"cp1":{"x":735.00,"y":1400.64},"cp2":{"x":516.45,"y":1404.39},"end":{"x":551.03,"y":1233.08}},
+  {"type":"bezier","start":{"x":551.03,"y":1233.08},"cp1":{"x":613.00,"y":926.14},"cp2":{"x":807.03,"y":593.41},"end":{"x":817.57,"y":458.47}},
+  {"type":"bezier","start":{"x":817.57,"y":458.47},"cp1":{"x":826.04,"y":350.13},"cp2":{"x":824.54,"y":276.70},"end":{"x":800.27,"y":195.13}},
+  {"type":"bezier","start":{"x":800.27,"y":195.13},"cp1":{"x":785.11,"y":144.17},"cp2":{"x":771.59,"y":136.30},"end":{"x":749.58,"y":125.07}},
+  {"type":"bezier","start":{"x":749.58,"y":125.07},"cp1":{"x":725.17,"y":112.62},"cp2":{"x":705.88,"y":123.42},"end":{"x":686.07,"y":129.33}}
+];
+
+function scalePoint(pt, sx, sy) {
+  return { x: pt.x * sx, y: pt.y * sy };
+}
+
+function initSegmentConfigs() {
+  // Scale authored coordinates to current canvas size
+  const sx = canvasW / AUTHORED_W;
+  const sy = canvasH / AUTHORED_H;
+
+  segmentConfigs = AUTHORED_SEGMENTS.map(cfg => {
+    const c = JSON.parse(JSON.stringify(cfg));
+    if (c.start) c.start = scalePoint(c.start, sx, sy);
+    if (c.end) c.end = scalePoint(c.end, sx, sy);
+    if (c.cp1) c.cp1 = scalePoint(c.cp1, sx, sy);
+    if (c.cp2) c.cp2 = scalePoint(c.cp2, sx, sy);
+    if (c.centerX != null) c.centerX *= sx;
+    if (c.centerY != null) c.centerY *= sy;
+    if (c.radius != null) c.radius *= Math.min(sx, sy);
+    return c;
+  });
+  rebuildPathFromConfigs();
+  return;
+
+  // --- Original procedural generation below (kept as reference) ---
+  const layout = getUnifiedLayout();
+  const cx = layout.earthCx;
+  const ey = layout.earthCy;
+  const er = layout.earthR;
+  const my = layout.moonCy;
+  const mr = layout.moonR;
+
+  // Default: each stage gets a cubic bezier. Initialize from rough positions.
+  // Stage segments spread from Earth lobe through Moon loop and back.
+  const defaults = [
+    // Launch: arc near Earth surface
+    { type: 'arc-earth', startAngle: 0.35, endAngle: 1.5, radius: er * 1.08 },
+    // ICPS Burns: wider Earth arc
+    { type: 'arc-earth', startAngle: 1.5, endAngle: 3.0, radius: er * 1.5 },
+    // Prox Ops: continue Earth arc
+    { type: 'arc-earth', startAngle: 3.0, endAngle: 4.5, radius: er * 1.5 },
+    // HEO Checkouts: finish Earth arc toward departure
+    { type: 'arc-earth', startAngle: 4.5, endAngle: 6.0, radius: er * 1.5 },
+    // TLI: bezier departing Earth heading toward Moon
+    { type: 'bezier', end: { x: cx - canvasW * 0.03, y: ey + (my - ey) * 0.2 } },
+    // Outbound Coast: bezier heading down-left toward Moon
+    { type: 'bezier', end: { x: cx - canvasW * 0.04, y: ey + (my - ey) * 0.65 } },
+    // Lunar Flyby: arc around Moon
+    { type: 'arc-moon', startAngle: Math.PI + 0.5, endAngle: -0.5, radius: mr * 4.5 },
+    // Return Coast: bezier heading up-right from Moon
+    { type: 'bezier', end: { x: cx + canvasW * 0.04, y: ey + (my - ey) * 0.35 } },
+    // CM/SM Sep: bezier approaching Earth
+    { type: 'bezier', end: { x: cx + canvasW * 0.02, y: ey + (my - ey) * 0.1 } },
+    // Reentry: bezier into Earth
+    { type: 'bezier', end: { x: cx + er * 0.8, y: ey + er * 0.5 } },
+    // Splashdown: short bezier to surface
+    { type: 'bezier', end: { x: cx + er * 0.3, y: ey + er * 0.6 } }
+  ];
+
+  segmentConfigs = [];
+  for (let i = 0; i < STAGES.length; i++) {
+    const d = defaults[i];
+    const prevEnd = i > 0 ? segmentConfigs[i - 1].end : { x: cx + er * 0.7, y: ey + er * 0.5 };
+
+    if (d.type.startsWith('arc')) {
+      const isEarth = d.type === 'arc-earth';
+      const acx = cx;
+      const acy = isEarth ? ey : my;
+      const r = d.radius;
+      const startPt = { x: acx + r * Math.cos(d.startAngle), y: acy + r * Math.sin(d.startAngle) };
+      const endPt = { x: acx + r * Math.cos(d.endAngle), y: acy + r * Math.sin(d.endAngle) };
+      segmentConfigs.push({
+        type: d.type,
+        start: i === 0 ? startPt : { ...prevEnd },
+        end: endPt,
+        startAngle: d.startAngle,
+        endAngle: d.endAngle,
+        radius: r,
+        centerX: acx,
+        centerY: acy
+      });
+    } else {
+      const start = { ...prevEnd };
+      const end = { ...d.end };
+      const cp1 = { x: start.x + (end.x - start.x) * 0.33, y: start.y + (end.y - start.y) * 0.33 };
+      const cp2 = { x: start.x + (end.x - start.x) * 0.66, y: start.y + (end.y - start.y) * 0.66 };
+      segmentConfigs.push({ type: 'bezier', start, cp1, cp2, end });
+    }
+  }
+}
+
+function sampleSegment(cfg, steps) {
+  const pts = [];
+  if (cfg.type === 'bezier') {
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const mt = 1 - t;
+      pts.push({
+        x: mt*mt*mt*cfg.start.x + 3*mt*mt*t*cfg.cp1.x + 3*mt*t*t*cfg.cp2.x + t*t*t*cfg.end.x,
+        y: mt*mt*mt*cfg.start.y + 3*mt*mt*t*cfg.cp1.y + 3*mt*t*t*cfg.cp2.y + t*t*t*cfg.end.y
+      });
+    }
+  } else if (cfg.type === 'arc-earth' || cfg.type === 'arc-moon') {
+    for (let i = 0; i <= steps; i++) {
+      const angle = cfg.startAngle + (cfg.endAngle - cfg.startAngle) * (i / steps);
+      pts.push({
+        x: cfg.centerX + cfg.radius * Math.cos(angle),
+        y: cfg.centerY + cfg.radius * Math.sin(angle)
+      });
+    }
+  } else { // straight
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      pts.push({
+        x: cfg.start.x + (cfg.end.x - cfg.start.x) * t,
+        y: cfg.start.y + (cfg.end.y - cfg.start.y) * t
+      });
+    }
+  }
+  return pts;
+}
+
+function rebuildPathFromConfigs() {
+  // Auto-connect: enforce each start = previous end
+  for (let i = 1; i < segmentConfigs.length; i++) {
+    const prev = segmentConfigs[i - 1];
+    const curr = segmentConfigs[i];
+    if (curr.type.startsWith('arc')) {
+      // For arcs, update startAngle to match the previous end
+      curr.start = { ...prev.end };
+    } else {
+      curr.start = { ...prev.end };
+    }
+  }
+  // Invalidate path cache so it rebuilds
+  missionPathCache = null;
+}
+
+function toggleDebugPanel() {
+  debugEditorOpen = !debugEditorOpen;
+  document.getElementById('debugPanel').classList.toggle('open', debugEditorOpen);
+  if (debugEditorOpen) {
+    if (segmentConfigs.length === 0) initSegmentConfigs();
+    renderDebugUI();
+  }
+}
+
+function renderDebugUI() {
+  const body = document.getElementById('debugBody');
+  body.innerHTML = '';
+  segmentConfigs.forEach((cfg, i) => {
+    const stage = STAGES[i];
+    const color = getStageColor(i);
+    const div = document.createElement('div');
+    div.className = 'seg-editor';
+    div.style.borderLeftColor = color;
+    div.style.borderLeftWidth = '3px';
+
+    let fieldsHtml = '';
+    const isFirst = i === 0;
+
+    // Type selector
+    const typeOptions = ['bezier', 'arc-earth', 'arc-moon', 'straight'].map(t =>
+      `<option value="${t}" ${cfg.type === t ? 'selected' : ''}>${t}</option>`
+    ).join('');
+
+    if (cfg.type === 'bezier') {
+      fieldsHtml = `
+        <div class="seg-fields">
+          <div class="seg-field-group ${isFirst ? '' : 'locked'}"><label>Sx</label><input type="number" value="${Math.round(cfg.start.x)}" data-seg="${i}" data-key="start.x" ${isFirst ? '' : 'readonly'}></div>
+          <div class="seg-field-group ${isFirst ? '' : 'locked'}"><label>Sy</label><input type="number" value="${Math.round(cfg.start.y)}" data-seg="${i}" data-key="start.y" ${isFirst ? '' : 'readonly'}></div>
+          <div class="seg-field-group"><label>C1x</label><input type="number" value="${Math.round(cfg.cp1.x)}" data-seg="${i}" data-key="cp1.x"></div>
+          <div class="seg-field-group"><label>C1y</label><input type="number" value="${Math.round(cfg.cp1.y)}" data-seg="${i}" data-key="cp1.y"></div>
+          <div class="seg-field-group"><label>C2x</label><input type="number" value="${Math.round(cfg.cp2.x)}" data-seg="${i}" data-key="cp2.x"></div>
+          <div class="seg-field-group"><label>C2y</label><input type="number" value="${Math.round(cfg.cp2.y)}" data-seg="${i}" data-key="cp2.y"></div>
+          <div class="seg-field-group"><label>Ex</label><input type="number" value="${Math.round(cfg.end.x)}" data-seg="${i}" data-key="end.x"></div>
+          <div class="seg-field-group"><label>Ey</label><input type="number" value="${Math.round(cfg.end.y)}" data-seg="${i}" data-key="end.y"></div>
+        </div>`;
+    } else if (cfg.type.startsWith('arc')) {
+      fieldsHtml = `
+        <div class="seg-fields">
+          <div class="seg-field-group"><label>StartAngle</label><input type="number" step="0.1" value="${cfg.startAngle.toFixed(2)}" data-seg="${i}" data-key="startAngle"></div>
+          <div class="seg-field-group"><label>EndAngle</label><input type="number" step="0.1" value="${cfg.endAngle.toFixed(2)}" data-seg="${i}" data-key="endAngle"></div>
+          <div class="seg-field-group"><label>Radius</label><input type="number" value="${Math.round(cfg.radius)}" data-seg="${i}" data-key="radius"></div>
+        </div>`;
+    } else {
+      fieldsHtml = `
+        <div class="seg-fields">
+          <div class="seg-field-group locked"><label>Sx</label><input type="number" value="${Math.round(cfg.start.x)}" readonly></div>
+          <div class="seg-field-group locked"><label>Sy</label><input type="number" value="${Math.round(cfg.start.y)}" readonly></div>
+          <div class="seg-field-group"><label>Ex</label><input type="number" value="${Math.round(cfg.end.x)}" data-seg="${i}" data-key="end.x"></div>
+          <div class="seg-field-group"><label>Ey</label><input type="number" value="${Math.round(cfg.end.y)}" data-seg="${i}" data-key="end.y"></div>
+        </div>`;
+    }
+
+    div.innerHTML = `
+      <div class="seg-editor-title">
+        <span class="seg-color" style="background:${color}"></span>
+        <span>${stage.name}</span>
+        <select data-seg="${i}" data-key="type">${typeOptions}</select>
+      </div>
+      ${fieldsHtml}
+    `;
+    body.appendChild(div);
+  });
+
+  // Wire input events
+  body.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('change', handleDebugInput);
+    el.addEventListener('input', handleDebugInput);
+  });
+}
+
+function handleDebugInput(e) {
+  const seg = parseInt(e.target.dataset.seg);
+  const key = e.target.dataset.key;
+  if (isNaN(seg) || !key) return;
+
+  const val = e.target.type === 'select-one' ? e.target.value : parseFloat(e.target.value);
+  const cfg = segmentConfigs[seg];
+
+  if (key === 'type') {
+    // Type change — reinitialize segment
+    const oldEnd = cfg.end;
+    const start = cfg.start;
+    if (val === 'bezier') {
+      const cp1 = { x: start.x + (oldEnd.x - start.x) * 0.33, y: start.y + (oldEnd.y - start.y) * 0.33 };
+      const cp2 = { x: start.x + (oldEnd.x - start.x) * 0.66, y: start.y + (oldEnd.y - start.y) * 0.66 };
+      segmentConfigs[seg] = { type: 'bezier', start, cp1, cp2, end: oldEnd };
+    } else if (val === 'arc-earth' || val === 'arc-moon') {
+      const layout = getUnifiedLayout();
+      const acx = val === 'arc-earth' ? layout.earthCx : layout.moonCx;
+      const acy = val === 'arc-earth' ? layout.earthCy : layout.moonCy;
+      const r = val === 'arc-earth' ? layout.earthR * 1.5 : layout.moonR * 4.5;
+      segmentConfigs[seg] = { type: val, start, end: oldEnd, startAngle: 0, endAngle: Math.PI, radius: r, centerX: acx, centerY: acy };
+    } else {
+      segmentConfigs[seg] = { type: 'straight', start, end: oldEnd };
+    }
+    rebuildPathFromConfigs();
+    renderDebugUI();
+    return;
+  }
+
+  // Set nested property
+  const keys = key.split('.');
+  if (keys.length === 2) {
+    if (!cfg[keys[0]]) cfg[keys[0]] = {};
+    cfg[keys[0]][keys[1]] = val;
+  } else {
+    cfg[key] = val;
+  }
+
+  // For arcs, recompute end point from angle
+  if (cfg.type.startsWith('arc') && (key === 'startAngle' || key === 'endAngle' || key === 'radius')) {
+    cfg.start = { x: cfg.centerX + cfg.radius * Math.cos(cfg.startAngle), y: cfg.centerY + cfg.radius * Math.sin(cfg.startAngle) };
+    cfg.end = { x: cfg.centerX + cfg.radius * Math.cos(cfg.endAngle), y: cfg.centerY + cfg.radius * Math.sin(cfg.endAngle) };
+  }
+
+  rebuildPathFromConfigs();
+}
+
+// Smooth bezier: make the control handles at a joint between two segments collinear
+// so the transition is smooth (C1 continuity). Works on the currently dragged point or
+// searches for the nearest joint to the last dragged point.
+function smoothSelectedJoint() {
+  if (segmentConfigs.length < 2) return;
+
+  // Find joints: each segment i's end connects to segment i+1's start
+  // Smooth by making segment[i].cp2 and segment[i+1].cp1 collinear through the joint point
+  for (let i = 0; i < segmentConfigs.length - 1; i++) {
+    const curr = segmentConfigs[i];
+    const next = segmentConfigs[i + 1];
+    if (curr.type !== 'bezier' || next.type !== 'bezier') continue;
+
+    const joint = curr.end; // = next.start (same point due to auto-connect)
+
+    // Direction from cp2 to joint
+    const dx1 = joint.x - curr.cp2.x;
+    const dy1 = joint.y - curr.cp2.y;
+    const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+
+    // Distance from joint to cp1 of next segment
+    const dx2 = next.cp1.x - joint.x;
+    const dy2 = next.cp1.y - joint.y;
+    const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+    if (len1 < 0.1) continue;
+
+    // Make next.cp1 collinear: same direction as joint-from-cp2, at its current distance
+    const dirX = dx1 / len1;
+    const dirY = dy1 / len1;
+    next.cp1.x = joint.x + dirX * len2;
+    next.cp1.y = joint.y + dirY * len2;
+  }
+
+  rebuildPathFromConfigs();
+  renderDebugUI();
+}
+
+function copySegmentConfig() {
+  const json = JSON.stringify(segmentConfigs, null, 2);
+  navigator.clipboard.writeText(json).then(() => {
+    alert('Segment config copied to clipboard!');
+  }).catch(() => {
+    // Fallback: log to console
+    console.log('=== SEGMENT CONFIG ===');
+    console.log(json);
+    alert('Config logged to console (clipboard not available)');
+  });
+}
+
+// Draw editor handles on canvas
+function drawDebugHourMarks(path) {
+  if (!debugShowHourMarks || !debugEditorOpen) return;
+  ctx.save();
+  ctx.font = `bold 10px ${getComputedStyle(document.documentElement).getPropertyValue('--font-mono')}`;
+  ctx.textAlign = 'center';
+  // Draw marks at every 1 hour for the first 24 hours
+  for (let h = 0; h <= 24; h++) {
+    const metSec = h * 3600;
+    const u = metToU(metSec);
+    const pt = path.getPoint(u);
+    // Dot
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff4444';
+    ctx.fill();
+    // Label
+    ctx.fillStyle = '#ff8888';
+    ctx.fillText(`T+${h}h`, pt.x, pt.y - 8);
+  }
+  ctx.restore();
+}
+
+function drawDebugHandles() {
+  if (!debugEditorOpen) return;
+
+  // Highlight: draw each segment in a distinct bright color
+  if (debugHighlightPath) {
+    const highlightColors = ['#ff4444','#ff8800','#ffdd00','#44ff44','#00ddff','#4488ff','#aa44ff','#ff44aa','#ff6644','#88ff44','#44ffaa'];
+    segmentConfigs.forEach((cfg, i) => {
+      const pts = sampleSegment(cfg, 50);
+      if (pts.length < 2) return;
+      ctx.save();
+      ctx.strokeStyle = highlightColors[i % highlightColors.length];
+      ctx.lineWidth = 3;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+      ctx.stroke();
+      // Label the segment number
+      const mid = pts[Math.floor(pts.length / 2)];
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillStyle = highlightColors[i % highlightColors.length];
+      ctx.textAlign = 'center';
+      ctx.fillText(`${i + 1}: ${STAGES[i].name}`, mid.x, mid.y - 10);
+      ctx.restore();
+    });
+  }
+
+  segmentConfigs.forEach((cfg, i) => {
+    const color = getStageColor(i);
+
+    if (cfg.type === 'bezier') {
+      // Draw handle arms
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cfg.start.x, cfg.start.y);
+      ctx.lineTo(cfg.cp1.x, cfg.cp1.y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cfg.end.x, cfg.end.y);
+      ctx.lineTo(cfg.cp2.x, cfg.cp2.y);
+      ctx.stroke();
+      ctx.restore();
+
+      // Draw points
+      [['start', cfg.start], ['cp1', cfg.cp1], ['cp2', cfg.cp2], ['end', cfg.end]].forEach(([key, pt]) => {
+        const isCtrl = key === 'cp1' || key === 'cp2';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, isCtrl ? 4 : 5, 0, Math.PI * 2);
+        ctx.fillStyle = isCtrl ? 'rgba(255,255,255,0.4)' : color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+    } else {
+      // Just draw start and end dots
+      [cfg.start, cfg.end].forEach(pt => {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+    }
+  });
+}
+
+// (Debug drag handling is merged into setupPanZoom above)
+
+
+/* ============================================================
+   TIME CONVERSION MODAL
+   ============================================================ */
+function metToLocalTimeStr(metSeconds) {
+  const date = new Date(T0.getTime() + metSeconds * 1000);
+  const options = {
+    month: '2-digit', day: '2-digit', year: '2-digit',
+    hour: 'numeric', minute: '2-digit', hour12: true,
+    timeZoneName: 'short'
+  };
+  return date.toLocaleString(undefined, options);
+}
+
+function metToLabel(metSeconds) {
+  const s = Math.floor(metSeconds);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d > 0) return `T+${d}d ${h}h ${m}m`;
+  if (h > 0) return `T+${h}h ${m}m`;
+  return `T+${m}m`;
+}
+
+function openTimeModal(metSeconds, label) {
+  document.getElementById('timeModalMet').textContent = label || metToLabel(metSeconds);
+  document.getElementById('timeModalLocal').textContent = metToLocalTimeStr(metSeconds);
+  document.getElementById('timeModalOverlay').classList.add('open');
+}
+
+function closeTimeModal() {
+  document.getElementById('timeModalOverlay').classList.remove('open');
+}
+
+/* ============================================================
+   RENDER STRUCTURED ACTIVITIES
+   ============================================================ */
+function renderActivities(activities) {
+  if (!activities || activities.length === 0) return '<p>No activities listed.</p>';
+  const now = getEffectiveNow();
+  const missionElapsed = (now - T0.getTime()) / 1000;
+
+  return '<ul>' + activities.map(a => {
+    if (a.met == null) return ''; // skip null-met (shouldn't exist anymore)
+    const isPast = missionElapsed >= a.met;
+    const cls = isPast ? 'past-activity' : 'future-activity';
+    let timeHtml = '';
+    if (isPast) {
+      // Past: show static T+ label
+      const label = a.label || metToLabel(a.met);
+      timeHtml = ` <span class="activity-time" onclick="openTimeModal(${a.met}, '${label}')">${label}</span>`;
+    } else {
+      // Future: show live T- countdown
+      const secsUntil = a.met - missionElapsed;
+      const countdownStr = formatCountdown(secsUntil);
+      timeHtml = ` <span class="activity-time activity-countdown" data-met="${a.met}" onclick="openTimeModal(${a.met})">${countdownStr}</span>`;
+    }
+    return `<li class="activity-item ${cls}">${a.text}${timeHtml}</li>`;
+  }).join('') + '</ul>';
+}
+
+function formatCountdown(seconds) {
+  const s = Math.abs(Math.floor(seconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const pad = n => String(n).padStart(2, '0');
+  if (h > 0) return `T- ${h}:${pad(m)}:${pad(sec)}`;
+  return `T- ${m}:${pad(sec)}`;
+}
+
+function updateActivityCountdowns() {
+  const countdowns = document.querySelectorAll('.activity-countdown');
+  if (countdowns.length === 0) return;
+  const now = getEffectiveNow();
+  const missionElapsed = (now - T0.getTime()) / 1000;
+  countdowns.forEach(el => {
+    const metVal = parseFloat(el.dataset.met);
+    if (isNaN(metVal)) return;
+    if (missionElapsed >= metVal) {
+      // Just crossed — re-render the whole activities list
+      if (selectedStageId) {
+        const stage = STAGES.find(s => s.id === selectedStageId);
+        if (stage) {
+          document.getElementById('accActivitiesBody').innerHTML = renderActivities(stage.activities);
+        }
+      }
+      return;
+    }
+    const secsUntil = metVal - missionElapsed;
+    el.textContent = formatCountdown(secsUntil);
+  });
+}
+
+/* ============================================================
+   ZOOM-TO-SEGMENT ON TAB SELECT
+   ============================================================ */
+let zoomLerp = null; // { startPanX, startPanY, startZoom, targetPanX, targetPanY, targetZoom, startTime, duration }
+
+function zoomToSegment(stageId) {
+  const idx = STAGES.findIndex(s => s.id === stageId);
+  if (idx < 0 || segmentConfigs.length === 0) return;
+
+  const cfg = segmentConfigs[idx];
+  if (!cfg) return;
+
+  // Sample the segment and find its bounding box
+  const pts = sampleSegment(cfg, 30);
+  if (pts.length === 0) return;
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const p of pts) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+
+  // Add padding
+  const pad = 60;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+
+  const segW = maxX - minX;
+  const segH = maxY - minY;
+  const segCx = (minX + maxX) / 2;
+  const segCy = (minY + maxY) / 2;
+
+  // Compute target zoom to fit the segment in the viewport
+  const targetZoom = Math.min(
+    canvasW / segW,
+    canvasH / segH,
+    3 // max zoom cap
+  );
+  const clampedZoom = Math.max(0.5, targetZoom);
+
+  // Compute target pan to center the segment
+  const targetPanX = canvasW / 2 - segCx * clampedZoom;
+  const targetPanY = canvasH / 2 - segCy * clampedZoom;
+
+  // Start lerp animation
+  zoomLerp = {
+    startPanX: panX,
+    startPanY: panY,
+    startZoom: zoom,
+    targetPanX,
+    targetPanY,
+    targetZoom: clampedZoom,
+    startTime: performance.now(),
+    duration: 500
+  };
+}
+
+function updateZoomLerp() {
+  if (!zoomLerp) return;
+  const elapsed = performance.now() - zoomLerp.startTime;
+  const t = Math.min(1, elapsed / zoomLerp.duration);
+  // Ease out cubic
+  const e = 1 - Math.pow(1 - t, 3);
+
+  panX = zoomLerp.startPanX + (zoomLerp.targetPanX - zoomLerp.startPanX) * e;
+  panY = zoomLerp.startPanY + (zoomLerp.targetPanY - zoomLerp.startPanY) * e;
+  zoom = zoomLerp.startZoom + (zoomLerp.targetZoom - zoomLerp.startZoom) * e;
+
+  if (t >= 1) zoomLerp = null;
+}
+
+function cancelZoomLerp() {
+  zoomLerp = null;
+}
+
 function init() {
   // Initialize canvas sizing + observer
   resizeCanvas();
   new ResizeObserver(() => resizeCanvas()).observe(canvas.parentElement);
 
+  initSegmentConfigs();  // Load authored path positions
   buildTabs();
   setupArrows();
+  setupPanZoom();
   computeLiveStage();
   selectStage(liveStageId);
 
@@ -2030,6 +3186,7 @@ function init() {
   setInterval(() => {
     computeLiveStage();
     updateTimer();
+    updateActivityCountdowns();
   }, 1000);
 }
 
