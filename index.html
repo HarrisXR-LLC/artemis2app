@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Artemis II — Mission Tracker</title>
+<link rel="icon" type="image/png" href="artemis2_favicon.png">
+
+<!-- Open Graph / Social Media Link Preview -->
+<meta property="og:type"        content="website">
+<meta property="og:title"       content="Artemis II — Mission Tracker">
+<meta property="og:description" content="Track the Artemis II mission in real time">
+<meta property="og:url"         content="https://harrisxr-llc.github.io/artemis2app/">
+<meta property="og:image"       content="https://harrisxr-llc.github.io/artemis2app/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- Twitter / X Card -->
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="Artemis II — Mission Tracker">
+<meta name="twitter:description" content="Track the Artemis II mission in real time">
+<meta name="twitter:image"       content="https://harrisxr-llc.github.io/artemis2app/og-image.jpg">
+
 <style>
 /* ============================================================
    GLOBAL THEME
@@ -20,7 +37,7 @@
   --accent-glow: rgba(0, 127, 255, 0.25);
   --lime:        #39ff14;
   --lime-glow:   rgba(57, 255, 20, 0.25);
-  --chip-bg:     rgba(10, 10, 15, 0.6);
+  --chip-bg:     rgba(20, 20, 30, 0.7);
   /* 3-color mission system */
   --color-past:    #2a6cc7;   /* darker blue — done/completed */
   --color-live:    #39ff14;   /* green — current stage */
@@ -202,7 +219,7 @@ html, body {
 }
 .mission-subtitle {
   font-size: 0.8em;
-  color: var(--accent);
+  color: var(--text);
   font-style: italic;
   margin-top: 2px;
 }
@@ -212,8 +229,10 @@ html, body {
   margin-top: 2px;
 }
 .mission-badge {
-  font-size: 1.4em;
+  height: 1.4em;
+  width: auto;
   display: inline-block;
+  vertical-align: middle;
   margin-right: 4px;
   vertical-align: middle;
 }
@@ -315,7 +334,7 @@ html, body {
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--chip-border);
   border-radius: 8px;
-  padding: 8px 14px;
+  padding: 8px 11px;
   box-sizing: border-box;
 }
 .hud--top-left .hud-chip {
@@ -338,13 +357,13 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  min-width: 26px;
+  width: 35px;
+  min-width: 35px;
   height: 100%;
   background: none;
   border: none;
   color: rgba(200, 200, 208, 0.7);
-  font-size: 1.4em;
+  font-size: 1.85em;
   cursor: pointer;
   transition: color 150ms;
   -webkit-tap-highlight-color: transparent;
@@ -422,6 +441,12 @@ html, body {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+.hud-badge-suffix {
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
 
 .hud-timer {
   font-family: var(--font-mono);
@@ -465,7 +490,7 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   padding: 0;
-  background: rgba(10, 10, 15, 0.6);
+  background: var(--chip-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -587,8 +612,9 @@ html, body {
   flex-shrink: 0;
 }
 .mobile-brand-badge {
-  font-size: 1.1em;
-  color: var(--text);
+  height: 1.1em;
+  width: auto;
+  vertical-align: middle;
 }
 .mobile-brand-title {
   font-size: 0.8em;
@@ -598,7 +624,7 @@ html, body {
 }
 .mobile-brand-sub {
   font-size: 0.65em;
-  color: var(--accent);
+  color: var(--text);
   font-style: italic;
 }
 .mobile-brand-credit {
@@ -752,11 +778,30 @@ html, body {
   font-weight: 600;
   margin-bottom: 4px;
 }
+.time-modal-day {
+  font-size: 1.0em;
+  color: var(--text-bright);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
 .time-modal-hint {
   font-size: 0.7em;
   color: rgba(200,200,208,0.4);
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+.time-modal-met-label {
+  font-size: 0.7em;
+  color: rgba(200,200,208,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 10px;
+}
+.time-modal-met {
+  font-size: 0.85em;
+  color: rgba(200,200,208,0.55);
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 /* Activity / todo list styles */
@@ -775,7 +820,7 @@ html, body {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  border: 1.5px solid rgba(0, 127, 255, 0.35);
+  border: 1.5px solid rgba(200, 200, 208, 0.25);
   border-radius: 3px;
   margin-top: 2px;
   display: flex;
@@ -784,11 +829,50 @@ html, body {
   font-size: 11px;
   color: transparent;
 }
-.todo-item.past-activity .todo-checkbox {
-  background: rgba(0, 90, 180, 0.2);
-  border-color: rgba(0, 90, 180, 0.6);
-  color: #005ab4;
+/* --- Past stage checkbox colors (darker blue) --- */
+.stage-past .todo-checkbox {
+  border-color: rgba(42, 108, 199, 0.4);
 }
+.stage-past .todo-item.past-activity .todo-checkbox {
+  background: rgba(42, 108, 199, 0.2);
+  border-color: rgba(42, 108, 199, 0.6);
+  color: var(--color-past);
+}
+/* --- Live stage checkbox colors (lime green) --- */
+.stage-current .todo-checkbox {
+  border-color: rgba(57, 255, 20, 0.4);
+}
+.stage-current .todo-item.past-activity .todo-checkbox {
+  background: rgba(57, 255, 20, 0.2);
+  border-color: rgba(57, 255, 20, 0.6);
+  color: var(--color-live);
+}
+/* --- Future stage checkbox colors (cornflower blue) --- */
+.stage-future .todo-checkbox {
+  border-color: rgba(111, 168, 255, 0.4);
+}
+.stage-future .todo-item.past-activity .todo-checkbox {
+  background: rgba(111, 168, 255, 0.2);
+  border-color: rgba(111, 168, 255, 0.6);
+  color: var(--color-future);
+}
+/* --- Canceled activity checkbox (X mark, uses stage color) --- */
+.stage-past .todo-item.canceled-activity .todo-checkbox {
+  background: rgba(42, 108, 199, 0.2);
+  border-color: rgba(42, 108, 199, 0.6);
+  color: var(--color-past);
+}
+.stage-current .todo-item.canceled-activity .todo-checkbox {
+  background: rgba(57, 255, 20, 0.2);
+  border-color: rgba(57, 255, 20, 0.6);
+  color: var(--color-live);
+}
+.stage-future .todo-item.canceled-activity .todo-checkbox {
+  background: rgba(111, 168, 255, 0.2);
+  border-color: rgba(111, 168, 255, 0.6);
+  color: var(--color-future);
+}
+/* --- Todo text styles (unchanged, color-neutral) --- */
 .todo-item.past-activity .todo-text {
   text-decoration: line-through;
   color: rgba(200, 200, 208, 0.35);
@@ -993,9 +1077,9 @@ html, body {
 
   <!-- ========== MOBILE BRANDING ========== -->
   <div class="mobile-brand">
-    <span class="mobile-brand-badge">&#9789;</span>
+    <img class="mobile-brand-badge" src="artemis2_mainicon.png" alt="Artemis II logo">
     <span class="mobile-brand-title">ARTEMIS II</span>
-    <span class="mobile-brand-sub">Interactive App | By HarrisXR LLC</span>
+    <span class="mobile-brand-sub">Mission Tracker | By HarrisXR LLC</span>
     <!-- reserved for future use -->
   </div>
 
@@ -1009,13 +1093,13 @@ html, body {
   <!-- ========== DESKTOP SIDEBAR ========== -->
   <nav class="sidebar" aria-label="Mission stages">
     <div class="sidebar-header">
-      <div class="mission-title"><span class="mission-badge">&#9789;</span>ARTEMIS II</div>
-      <div class="mission-subtitle">Interactive App | By HarrisXR LLC</div>
+      <div class="mission-title"><img class="mission-badge" src="artemis2_mainicon.png" alt="Artemis II logo">ARTEMIS II</div>
+      <div class="mission-subtitle">Mission Tracker | By HarrisXR LLC</div>
     </div>
     <div class="sidebar-tabs" id="sidebarTabs"></div>
     <div class="sidebar-disclaimer">
       Approximate mission data &middot; Updated as mission progresses<br>
-      Source: NASA Artemis II
+      Data Sources: NASA &middot; Updated 4/3/26
       <button class="debug-btn" onclick="toggleDebugPanel()">DEBUG</button>
     </div>
   </nav>
@@ -1028,11 +1112,12 @@ html, body {
       <div class="hud hud--top-left">
         <div class="hud-chip hud-chip--nav">
           <button class="chip-arrow chip-arrow--left" id="chipArrowLeft" aria-label="Previous stage">&#8249;</button>
-          <button class="chip-today" id="chipToday" style="display:none">TODAY</button>
+          <button class="chip-today" id="chipTodayLeft" style="display:none">TODAY</button>
           <div class="chip-center" id="chipCenter" style="cursor:pointer;pointer-events:auto">
             <h1 class="hud-title" id="hudTitle">—</h1>
             <div class="hud-flight-day" id="hudFlightDay">—</div>
           </div>
+          <button class="chip-today" id="chipTodayRight" style="display:none">TODAY</button>
           <button class="chip-arrow chip-arrow--right" id="chipArrowRight" aria-label="Next stage">&#8250;</button>
         </div>
       </div>
@@ -1071,16 +1156,19 @@ html, body {
 </div>
 
 <footer class="status-bar">
-  <div class="status-bar-disclaimer">Approximate mission data &middot; Updated as mission progresses &middot; Source: NASA Artemis II</div>
-  <div>&copy; 2026 <a href="https://www.harrisxr.com" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">HarrisXR LLC</a> | MIT License | NASA-related material &copy; NASA</div>
+  <div class="status-bar-disclaimer">Approximate mission data &middot; Updated as mission progresses &middot; Data Sources: NASA &middot; Updated 4/3/26</div>
+  <div>&copy; 2026 <a href="https://www.harrisxr.com" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">HarrisXR LLC</a> | MIT License | NASA materials &copy; NASA</div>
 </footer>
 
 <!-- Time Conversion Modal -->
 <div class="time-modal-overlay" id="timeModalOverlay" onclick="closeTimeModal()">
   <div class="time-modal" onclick="event.stopPropagation()">
     <div class="time-modal-label" id="timeModalLabel">When this happens:</div>
+    <div class="time-modal-day" id="timeModalDay">--</div>
     <div class="time-modal-local" id="timeModalLocal">--</div>
     <div class="time-modal-hint">Your local time</div>
+    <div class="time-modal-met-label">Mission time</div>
+    <div class="time-modal-met" id="timeModalMet">--</div>
   </div>
 </div>
 
@@ -1095,6 +1183,9 @@ html, body {
       </label>
       <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">
         <input type="checkbox" id="debugHourMarks" onchange="debugShowHourMarks=this.checked"> Hours
+      </label>
+      <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" id="debugTimeTicks" onchange="debugShowTimeTicks=this.checked"> Time Ticks
       </label>
       <label style="font-size:11px;display:flex;align-items:center;gap:3px">
         T+ <input type="text" id="debugTimeOverride" placeholder="HH:MM:SS" style="width:80px;background:#1a1a28;border:1px solid rgba(255,255,255,0.15);color:var(--color-live);padding:2px 5px;border-radius:3px;font-family:var(--font-mono);font-size:11px" onchange="applyTimeOverride(this.value)">
@@ -1163,7 +1254,7 @@ const MET_LAUNCH_START           = met(0,  0,  0,  0);   // 0/00:00:00  Liftoff
 const MET_ICPS_BURNS_START       = met(0,  0, 50,  0);   // 0/00:50:00  PRM
 const MET_PROX_OPS_START         = met(0,  3, 23,  0);   // 0/03:23:00  Orion/ICPS separation
 const MET_HEO_CHECKOUTS_START    = met(0, 13, 30,  0);   // 0/13:30:00  Orion PRB (approx)
-const MET_TLI_START              = met(1,  1,  8, 42);   // 1/01:08:42  TLI burn
+const MET_TLI_START              = met(1,  1, 14,  0);   // 1/01:14:00  TLI burn (NASA confirmed 7:49 PM EDT Apr 2)
 const MET_OUTBOUND_START         = met(1,  6,  0,  0);   // ~1/06:00:00 Post-TLI coast begins
 const MET_LUNAR_FLYBY_START      = met(5,  0, 29, 59);   // 5/00:29:59  Lunar close approach
 const MET_RETURN_COAST_START     = met(5, 18, 53,  0);   // 5/18:53:00  Lunar SOI exit
@@ -1186,7 +1277,7 @@ const TICK_PRM          = met(0, 0, 50, 0);
 const TICK_ARB_TIG      = met(0, 1, 47, 0);
 
 // ===== EARTH-MOON TRAJECTORY TICKS (April 1 PDF) =====
-const TICK_TLI          = met(1,  1,  8, 42);
+const TICK_TLI          = met(1,  1, 14,  0);
 const TICK_OTC1         = met(2,  1,  8, 42);
 const TICK_OTC2         = met(3,  1,  8, 42);
 const TICK_OTC3         = met(4,  4, 29, 52);
@@ -1346,7 +1437,7 @@ const STAGES = [
     description: 'The European Service Module\'s main engine fires for approximately 5–6 minutes, accelerating Orion to escape Earth orbit and setting the free-return trajectory toward the Moon. This is the last major engine firing of the Artemis II mission.',
     activities: [
 
-      { text: 'TLI burn: ~5–6 minutes', met: met(1,1,8,42), label: 'T+25h 08m' },
+      { text: 'TLI burn: ~5–6 minutes', met: met(1,1,14,0) },
 
     ],
 
@@ -1370,7 +1461,7 @@ const STAGES = [
     metEndSeconds: MET_LUNAR_FLYBY_START,
     description: 'A ~4-day coast toward the Moon with three outbound trajectory correction burns to refine the path. The crew conducts medical demonstrations, suit checks, media events, lunar observation rehearsals, and enters the lunar sphere of influence on Flight Day 5.',
     activities: [
-      { text: 'OTC-1: first outbound correction (FD3)', met: met(2,1,8,42), label: 'T+49h 08m' },
+      { text: 'OTC-1: first outbound correction (FD3) (Canceled)', met: met(2,1,8,42), canceled: true },
 
       { text: 'OTC-2: second outbound correction (FD4)', met: met(3,1,8,42), label: 'T+73h 08m' },
 
@@ -2245,7 +2336,7 @@ function drawMissionTicks(path) {
     ctx.stroke();
 
     // Label (gray)
-    const labelOff = 10;
+    const labelOff = 30;
     const lx = pos.x + labelOff * Math.cos(pos.angle);
     const ly = pos.y + labelOff * Math.sin(pos.angle);
 
@@ -2262,6 +2353,74 @@ function drawMissionTicks(path) {
     ctx.fillText(ms.label, lx, ly + 3);
     ctx.globalAlpha = 1;
     drawnLabels.push({ x: lx, y: ly });
+  }
+
+  ctx.restore();
+}
+
+// --- Draw timeline ticks when zoomed in (debug feature) ---
+function drawTimelineTicks(path) {
+  if (!debugShowTimeTicks) return;
+  if (!currentScene) return;
+  const selectedIdx = STAGES.findIndex(s => s.id === selectedStageId);
+  if (selectedIdx < 0) return;
+
+  // Fade in: 0 at zoom<=1.3, full at zoom>=2.0
+  const fadeAlpha = Math.max(0, Math.min(1, (zoom - 1.3) / 0.7));
+  if (fadeAlpha <= 0) return;
+
+  const stage = STAGES[selectedIdx];
+  const state = getStageColorState(selectedIdx);
+  const [uStart, uEnd] = getStageURange(stage);
+
+  // Compute 6 evenly-spaced sub-times at 1/7 through 6/7 of stage duration
+  const stageDuration = stage.metEndSeconds - stage.metSeconds;
+  const ticks = [];
+  for (let i = 1; i <= 6; i++) {
+    ticks.push(stage.metSeconds + stageDuration * (i / 7));
+  }
+
+  ctx.save();
+
+  // Font: one-third the sub-stage tick font size
+  const fontSize = Math.max(4, canvasH * 0.013 / 3);
+  const fontFamily = getComputedStyle(document.documentElement).getPropertyValue('--font-sans');
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  ctx.textAlign = 'center';
+
+  const tickLen = 2;
+  const labelOff = 20;
+
+  for (const met of ticks) {
+    const u = metToU(met);
+    if (u < uStart - 0.001 || u > uEnd + 0.001) continue;
+
+    const pos = path.getTickPosition(u);
+    if (!pos) continue;
+
+    const lx = pos.x + labelOff * Math.cos(pos.angle);
+    const ly = pos.y + labelOff * Math.sin(pos.angle);
+
+    // Mini tick mark
+    ctx.beginPath();
+    ctx.moveTo(pos.x - tickLen * Math.cos(pos.angle), pos.y - tickLen * Math.sin(pos.angle));
+    ctx.lineTo(pos.x + tickLen * Math.cos(pos.angle), pos.y + tickLen * Math.sin(pos.angle));
+    ctx.strokeStyle = getStateColor(state, 0.4 * fadeAlpha);
+    ctx.lineWidth = 0.75;
+    ctx.stroke();
+
+    // Wall-clock label
+    const date = new Date(T0.getTime() + met * 1000);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    let hours = date.getHours();
+    const mins = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12 || 12;
+    const label = `${month}/${day} ${hours}:${mins}${ampm}`;
+
+    ctx.fillStyle = getStateColor(state, 0.5 * fadeAlpha);
+    ctx.fillText(label, lx, ly + 3);
   }
 
   ctx.restore();
@@ -2332,6 +2491,12 @@ function render() {
 
   // Tick marks
   drawMissionTicks(path);
+
+  // Flash tick (triggered by todo checkbox click)
+  drawFlashTick(path);
+
+  // 4-hour timeline ticks (visible when zoomed in)
+  drawTimelineTicks(path);
 
   // Ghost markers (azure rings at selected stage start + end)
   const ghostStart = path.getPoint(ghostStartU);
@@ -2435,8 +2600,11 @@ function initChipNav() {
     const idx = STAGES.findIndex(s => s.id === selectedStageId);
     if (idx < STAGES.length - 1) selectStage(STAGES[idx + 1].id);
   });
-  // TODAY button: jump to live stage
-  document.getElementById('chipToday').addEventListener('click', () => {
+  // TODAY buttons: jump to live stage
+  document.getElementById('chipTodayLeft').addEventListener('click', () => {
+    selectStage(liveStageId);
+  });
+  document.getElementById('chipTodayRight').addEventListener('click', () => {
     selectStage(liveStageId);
   });
   // Center click: re-center zoom on current stage
@@ -2452,8 +2620,9 @@ function updateChipArrows() {
   document.getElementById('chipArrowLeft').disabled = (idx <= 0);
   document.getElementById('chipArrowRight').disabled = (idx >= STAGES.length - 1);
 
-  // Show TODAY button only when viewing stages after live
-  document.getElementById('chipToday').style.display = (idx > liveIdx) ? 'flex' : 'none';
+  // Show TODAY button: right side for past stages, left side for future stages
+  document.getElementById('chipTodayRight').style.display = (idx < liveIdx) ? 'flex' : 'none';
+  document.getElementById('chipTodayLeft').style.display = (idx > liveIdx) ? 'flex' : 'none';
 }
 
 
@@ -2508,15 +2677,16 @@ function selectStage(stageId) {
   const hudFlightDay = document.getElementById('hudFlightDay');
   const stageIdx = STAGES.findIndex(s => s.id === stageId);
   const stageState = getStageColorState(stageIdx);
-  let badgeHtml = '';
+  let badgePrefix = '';
+  let badgeSuffix = '';
   if (stageState === 'current') {
-    badgeHtml = '<span class="hud-live-dot"></span><span class="hud-badge" style="color:var(--color-live)">LIVE</span> ';
+    badgePrefix = '<span class="hud-live-dot"></span><span class="hud-badge" style="color:var(--color-live)">LIVE</span> ';
   } else if (stageState === 'past') {
-    badgeHtml = '<span class="hud-badge" style="color:var(--color-past);opacity:0.7">DONE</span> ';
+    badgeSuffix = ' <span class="hud-badge-suffix" style="color:var(--color-past);opacity:0.7">(DONE)</span>';
   } else if (stageState === 'next') {
-    badgeHtml = '<span class="hud-badge" style="color:var(--color-future)">NEXT</span> ';
+    badgeSuffix = ' <span class="hud-badge-suffix" style="color:var(--color-future)">(NEXT)</span>';
   }
-  hudFlightDay.innerHTML = badgeHtml + stage.flightDay;
+  hudFlightDay.innerHTML = badgePrefix + stage.flightDay + badgeSuffix;
   hudFlightDay.style.color = getStateCSSColor(stageState);
 
   // Update chip navigation arrows
@@ -2529,7 +2699,7 @@ function selectStage(stageId) {
 
   // Tab: activities (structured with times)
   const activitiesBody = document.getElementById('tabActivities');
-  activitiesBody.innerHTML = renderActivities(stage.activities);
+  activitiesBody.innerHTML = renderActivities(stage.activities, stageState);
 
   // Tab: technical details (crew always at top)
   const techBody = document.getElementById('tabTechnical');
@@ -2867,6 +3037,7 @@ function getStageColor(idx) {
 
 let debugHighlightPath = false;
 let debugShowHourMarks = false;
+let debugShowTimeTicks = false;
 
 // Authored at this canvas size — all coordinates are scaled proportionally to current canvas
 const AUTHORED_W = 1252;
@@ -3315,9 +3486,27 @@ function metToLabel(metSeconds) {
   return `T+${m}m`;
 }
 
-function openTimeModal(metSeconds, label) {
-  document.getElementById('timeModalLabel').textContent = 'When this happens:';
+function openTimeModal(metSeconds, stageState) {
+  const now = getEffectiveNow();
+  const missionElapsed = (now - T0.getTime()) / 1000;
+  const isPast = missionElapsed >= metSeconds;
+
+  // Header text + color based on stage state
+  const labelEl = document.getElementById('timeModalLabel');
+  labelEl.textContent = isPast ? 'When this happened:' : 'When this happens:';
+  labelEl.style.color = getStateCSSColor(stageState || 'future');
+
+  // Day of the week
+  const eventDate = new Date(T0.getTime() + metSeconds * 1000);
+  const dayName = eventDate.toLocaleDateString(undefined, { weekday: 'long' });
+  document.getElementById('timeModalDay').textContent = dayName;
+
+  // Local time
   document.getElementById('timeModalLocal').textContent = metToLocalTimeStr(metSeconds);
+
+  // Mission time (T+ format)
+  document.getElementById('timeModalMet').textContent = formatDuration(metSeconds);
+
   document.getElementById('timeModalOverlay').classList.add('open');
 }
 
@@ -3328,26 +3517,37 @@ function closeTimeModal() {
 /* ============================================================
    RENDER STRUCTURED ACTIVITIES
    ============================================================ */
-function renderActivities(activities) {
+function renderActivities(activities, stageState) {
   if (!activities || activities.length === 0) return '<p>No activities listed.</p>';
   const now = getEffectiveNow();
   const missionElapsed = (now - T0.getTime()) / 1000;
 
-  return '<ul class="todo-list">' + activities.map(a => {
+  const stageColorClass = stageState === 'current' ? 'stage-current' : stageState === 'past' ? 'stage-past' : 'stage-future';
+
+  return '<ul class="todo-list ' + stageColorClass + '">' + activities.map(a => {
     if (a.met == null) return '';
     const isPast = missionElapsed >= a.met;
+
+    // Canceled items get their own class and X mark; strikethrough if time has passed
+    if (a.canceled) {
+      const canceledPast = isPast ? ' past-activity' : '';
+      const label = formatDuration(a.met);
+      const timeHtml = ` <span class="activity-time" onclick="openTimeModal(${a.met}, '${stageState}')">${label}</span>`;
+      return `<li class="todo-item canceled-activity${canceledPast}"><span class="todo-checkbox" onclick="zoomToMet(${a.met})" style="cursor:pointer">&#10005;</span><span class="todo-text">${a.text}${timeHtml}</span></li>`;
+    }
+
     const cls = isPast ? 'past-activity' : 'future-activity';
     const checkmark = isPast ? '&#10003;' : '';
     let timeHtml = '';
     if (isPast) {
-      const label = a.label || metToLabel(a.met);
-      timeHtml = ` <span class="activity-time" onclick="openTimeModal(${a.met}, '${label}')">${label}</span>`;
+      const label = formatDuration(a.met);
+      timeHtml = ` <span class="activity-time" onclick="openTimeModal(${a.met}, '${stageState}')">${label}</span>`;
     } else {
       const secsUntil = a.met - missionElapsed;
       const countdownStr = formatCountdown(secsUntil);
-      timeHtml = ` <span class="activity-time activity-countdown" data-met="${a.met}" onclick="openTimeModal(${a.met})">${countdownStr}</span>`;
+      timeHtml = ` <span class="activity-time activity-countdown" data-met="${a.met}" onclick="openTimeModal(${a.met}, '${stageState}')">${countdownStr}</span>`;
     }
-    return `<li class="todo-item ${cls}"><span class="todo-checkbox">${checkmark}</span><span class="todo-text">${a.text}${timeHtml}</span></li>`;
+    return `<li class="todo-item ${cls}"><span class="todo-checkbox" onclick="zoomToMet(${a.met})" style="cursor:pointer">${checkmark}</span><span class="todo-text">${a.text}${timeHtml}</span></li>`;
   }).join('') + '</ul>';
 }
 
@@ -3374,7 +3574,8 @@ function updateActivityCountdowns() {
       if (selectedStageId) {
         const stage = STAGES.find(s => s.id === selectedStageId);
         if (stage) {
-          document.getElementById('tabActivities').innerHTML = renderActivities(stage.activities);
+          const sIdx = STAGES.findIndex(s => s.id === selectedStageId);
+          document.getElementById('tabActivities').innerHTML = renderActivities(stage.activities, getStageColorState(sIdx));
         }
       }
       return;
@@ -3388,6 +3589,7 @@ function updateActivityCountdowns() {
    ZOOM-TO-SEGMENT ON TAB SELECT
    ============================================================ */
 let zoomLerp = null; // { startPanX, startPanY, startZoom, targetPanX, targetPanY, targetZoom, startTime, duration }
+let flashTick = null; // { metSeconds, startTime, duration }
 
 function zoomToSegment(stageId) {
   const idx = STAGES.findIndex(s => s.id === stageId);
@@ -3458,6 +3660,59 @@ function updateZoomLerp() {
 
 function cancelZoomLerp() {
   zoomLerp = null;
+}
+
+function zoomToMet(metSeconds) {
+  const path = getMissionPath();
+  if (!path) return;
+  const u = metToU(metSeconds);
+  const pt = path.getPoint(u);
+  if (!pt) return;
+
+  const targetZoom = 1.5;
+  const targetPanX = canvasW / 2 - pt.x * targetZoom;
+  const targetPanY = canvasH / 2 - pt.y * targetZoom;
+
+  zoomLerp = {
+    startPanX: panX,
+    startPanY: panY,
+    startZoom: zoom,
+    targetPanX,
+    targetPanY,
+    targetZoom,
+    startTime: performance.now(),
+    duration: 500
+  };
+
+  // Trigger flash tick at the target position
+  flashTick = {
+    metSeconds,
+    startTime: performance.now(),
+    duration: 1000
+  };
+}
+
+function drawFlashTick(path) {
+  if (!flashTick) return;
+  const elapsed = performance.now() - flashTick.startTime;
+  if (elapsed >= flashTick.duration) { flashTick = null; return; }
+
+  const progress = elapsed / flashTick.duration;
+  const opacity = 0.8 * (1 - progress); // fade from 80% to 0
+
+  const u = metToU(flashTick.metSeconds);
+  const pos = path.getTickPosition(u);
+  if (!pos) return;
+
+  const len = 7; // 33% larger than normal ticks (5)
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(pos.x - len * Math.cos(pos.angle), pos.y - len * Math.sin(pos.angle));
+  ctx.lineTo(pos.x + len * Math.cos(pos.angle), pos.y + len * Math.sin(pos.angle));
+  ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function init() {
