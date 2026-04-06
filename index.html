@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Artemis II — Mission Tracker</title>
+<title>Artemis II Mission Tracker</title>
 <link rel="icon" type="image/png" href="artemis2_favicon.png">
 
 <!-- Open Graph / Social Media Link Preview -->
@@ -318,16 +318,10 @@ html, body {
   pointer-events: none;
 }
 .hud--top-left {
-  top: 12px;
-  left: 5%;
-  right: 5%;
+  top: 0;
+  left: 0;
+  right: 0;
 }
-.hud--bottom-left {
-  bottom: calc(25vh + 30px);
-  left: 50%;
-  transform: translateX(-50%);
-}
-
 .hud-chip {
   background: var(--chip-bg);
   backdrop-filter: blur(8px);
@@ -341,47 +335,68 @@ html, body {
   width: 100%;
   height: 52px;
   overflow: hidden;
+  border-radius: 0 0 8px 8px;
 }
 
+
 .hud-chip--nav {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0;
+  justify-content: center;
 }
 .chip-center {
-  flex: 1;
-  min-width: 0;
   text-align: center;
+  min-width: 0;
 }
 .chip-arrow {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 35px;
-  min-width: 35px;
-  height: 100%;
+  min-height: 34px;
   background: none;
-  border: none;
-  color: rgba(200, 200, 208, 0.7);
-  font-size: 1.85em;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  color: #f0f0f5;
+  font-size: 1.1em;
+  font-weight: 600;
   cursor: pointer;
-  transition: color 150ms;
+  transition: color 150ms, border-color 150ms;
   -webkit-tap-highlight-color: transparent;
   pointer-events: auto;
-  padding: 0;
+  padding: 7px 10px;
+  flex-shrink: 0;
 }
 .chip-arrow:hover {
-  color: #f0f0f5;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.7);
 }
 .chip-arrow:disabled {
-  color: rgba(200, 200, 208, 0.15);
+  color: rgba(200, 200, 208, 0.2);
+  border-color: rgba(200, 200, 208, 0.12);
   cursor: default;
   pointer-events: none;
 }
+.chip-arrow--left {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.chip-arrow--right {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
 .chip-today {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 34px;
   font-family: var(--font-sans);
   font-size: 0.6em;
   font-weight: 600;
@@ -390,13 +405,18 @@ html, body {
   background: none;
   border: 1px solid rgba(200, 200, 208, 0.35);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 7px 10px;
   cursor: pointer;
   pointer-events: auto;
   white-space: nowrap;
-  flex-shrink: 0;
   transition: color 150ms, border-color 150ms;
   -webkit-tap-highlight-color: transparent;
+}
+#chipTodayLeft {
+  left: 48px;
+}
+#chipTodayRight {
+  right: 48px;
 }
 .chip-today:hover {
   color: #f0f0f5;
@@ -450,7 +470,7 @@ html, body {
 
 .hud-timer {
   font-family: var(--font-mono);
-  font-size: 1.3em;
+  font-size: 1.17em;
   font-weight: 700;
   color: var(--accent);
   letter-spacing: 0.03em;
@@ -458,13 +478,23 @@ html, body {
   white-space: nowrap;
 }
 .hud-timer-label {
-  font-size: 0.6em;
+  font-size: 0.54em;
   color: rgba(200, 200, 208, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 2px;
   white-space: nowrap;
   text-align: center;
+}
+.hud-timer-to {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.41em;
+  font-weight: 600;
+  color: rgba(200, 200, 208, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 3px 0;
 }
 
 .hud-stat {
@@ -482,9 +512,9 @@ html, body {
    ============================================================ */
 .details-panel {
   position: absolute;
-  bottom: 6px;
-  left: 5%;
-  right: 5%;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 25vh;
   display: flex;
   flex-direction: column;
@@ -494,9 +524,52 @@ html, body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  border-radius: 10px 10px 0 0;
   z-index: 10;
   pointer-events: auto;
+}
+
+.details-timer {
+  position: relative;
+  padding: 7px 10px 5px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+.details-timer-content {
+  text-align: center;
+}
+.time-mode-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.time-mode-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(200, 200, 208, 0.4);
+  background: transparent;
+  transition: background 150ms, border-color 150ms;
+}
+.time-unit {
+  font-size: 0.75em;
+  font-weight: 400;
+  color: inherit;
+  letter-spacing: 0.02em;
 }
 
 /* ---- Info Tabs (reusable tabbed panel) ---- */
@@ -605,8 +678,9 @@ html, body {
 .mobile-brand {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 10px 14px;
   background: var(--bg-panel);
   border-bottom: 1px solid rgba(255,255,255,0.04);
   flex-shrink: 0;
@@ -766,42 +840,81 @@ html, body {
   min-width: 240px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
-.time-modal-label {
-  font-size: 0.85em;
-  font-weight: 600;
-  color: var(--accent);
-  margin-bottom: 10px;
-}
-.time-modal-local {
+.time-modal-title {
   font-size: 1.1em;
+  font-weight: 700;
   color: var(--text-bright);
-  font-weight: 600;
+  margin-bottom: 12px;
+}
+.time-modal-section-label {
+  font-size: 0.65em;
+  color: rgba(200,200,208,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   margin-bottom: 4px;
 }
 .time-modal-day {
-  font-size: 1.0em;
+  font-size: 0.85em;
   color: var(--text-bright);
   font-weight: 600;
   margin-bottom: 2px;
 }
-.time-modal-hint {
-  font-size: 0.7em;
-  color: rgba(200,200,208,0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-.time-modal-met-label {
-  font-size: 0.7em;
-  color: rgba(200,200,208,0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-top: 10px;
+.time-modal-local {
+  font-size: 0.85em;
+  color: var(--text-bright);
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 .time-modal-met {
   font-size: 0.85em;
   color: rgba(200,200,208,0.55);
   font-weight: 500;
   margin-top: 2px;
+}
+
+/* About Modal */
+.about-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.about-modal-overlay.open {
+  display: flex;
+}
+.about-modal {
+  background: #14141f;
+  border: 1px solid rgba(0,127,255,0.3);
+  border-radius: 12px;
+  padding: 24px 28px;
+  max-width: 420px;
+  width: 90%;
+  max-height: 70vh;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.about-modal-content {
+  overflow-y: auto;
+  max-height: calc(70vh - 48px);
+  font-size: 0.82em;
+  color: rgba(200,200,208,0.7);
+  line-height: 1.65;
+}
+.about-modal-content p {
+  margin: 0 0 12px;
+}
+.about-modal-title {
+  font-size: 1.15em;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin: 0 0 14px;
+}
+.about-modal-signature {
+  margin-top: 16px;
+  color: rgba(200,200,208,0.5);
+  font-style: italic;
 }
 
 /* Activity / todo list styles */
@@ -1000,7 +1113,7 @@ html, body {
 @media (max-height: 599px) {
   .hud-chip { font-size: 0.85em; padding: 6px 10px; }
   .hud-title { font-size: 1em; }
-  .hud-timer { font-size: 1.1em; }
+  .hud-timer { font-size: 1.0em; }
   .info-tab { font-size: 0.72em; padding: 7px 10px; }
   .stage-strip { height: 36px; }
   .strip-tab { font-size: 0.7em; padding: 4px 8px; }
@@ -1055,10 +1168,8 @@ html, body {
     width: 640px;
     max-width: 90%;
   }
-  .hud--bottom-left {
-    bottom: calc(25vh + 30px);
-    left: 50%;
-    transform: translateX(-50%);
+  .hud--top-left .hud-chip {
+    border-radius: 8px;
   }
   .details-panel {
     left: 50%;
@@ -1068,6 +1179,7 @@ html, body {
     width: 640px;
     max-width: 90%;
     height: 25vh;
+    border-radius: 10px;
   }
 }
 </style>
@@ -1078,8 +1190,7 @@ html, body {
   <!-- ========== MOBILE BRANDING ========== -->
   <div class="mobile-brand">
     <img class="mobile-brand-badge" src="artemis2_mainicon.png" alt="Artemis II logo">
-    <span class="mobile-brand-title">ARTEMIS II</span>
-    <span class="mobile-brand-sub">Mission Tracker | By HarrisXR LLC</span>
+    <span class="mobile-brand-title">Artemis II Mission Tracker</span>
     <!-- reserved for future use -->
   </div>
 
@@ -1093,13 +1204,12 @@ html, body {
   <!-- ========== DESKTOP SIDEBAR ========== -->
   <nav class="sidebar" aria-label="Mission stages">
     <div class="sidebar-header">
-      <div class="mission-title"><img class="mission-badge" src="artemis2_mainicon.png" alt="Artemis II logo">ARTEMIS II</div>
-      <div class="mission-subtitle">Mission Tracker | By HarrisXR LLC</div>
+      <div class="mission-title"><img class="mission-badge" src="artemis2_mainicon.png" alt="Artemis II logo">Artemis II Mission Tracker</div>
     </div>
     <div class="sidebar-tabs" id="sidebarTabs"></div>
     <div class="sidebar-disclaimer">
       Approximate mission data &middot; Updated as mission progresses<br>
-      Data Sources: NASA &middot; Updated 4/3/26
+      Data Sources: NASA &middot; Updated 4/5/26
       <button class="debug-btn" onclick="toggleDebugPanel()">DEBUG</button>
     </div>
   </nav>
@@ -1122,16 +1232,20 @@ html, body {
         </div>
       </div>
 
-      <div class="hud hud--bottom-left">
-        <div class="hud-chip">
-          <div class="hud-timer-label" id="hudTimerLabel">Mission Elapsed Time</div>
-          <div class="hud-timer" id="hudTimer">T+ 00:00:00:00</div>
-        </div>
-      </div>
 
     </div>
 
     <div class="details-panel" id="detailsPanel">
+      <div class="details-timer">
+        <div class="details-timer-content">
+          <div class="hud-timer-label" id="hudTimerLabel">Mission Elapsed Time</div>
+          <div class="hud-timer" id="hudTimer">T+ 00:00:00:00</div>
+        </div>
+        <button class="time-mode-toggle" onclick="toggleTimeMode()" aria-label="Toggle time display mode">
+          <span class="time-mode-dot" id="timeModeMet"></span>
+          <span class="time-mode-dot" id="timeModeRealtime"></span>
+        </button>
+      </div>
       <div class="info-tabs" id="infoTabs">
         <button class="info-tab active" data-tab="activities">Stage's Todos</button>
         <button class="info-tab" data-tab="description">Info</button>
@@ -1157,18 +1271,33 @@ html, body {
 </div>
 
 <footer class="status-bar">
-  <div class="status-bar-disclaimer">Approximate mission data &middot; Updated as mission progresses &middot; Data Sources: NASA &middot; Mission info from <a href="https://issinfo.net/artemis.html" style="color:inherit;text-decoration:underline">issinfo.net</a> &middot; Updated 4/3/26</div>
-  <div>&copy; 2026 <a href="https://www.harrisxr.com" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">HarrisXR LLC</a> | MIT License | NASA materials &copy; NASA</div>
+  <div class="status-bar-disclaimer">Approximate mission data &middot; Updated as mission progresses &middot; Data Sources: NASA &middot; Updated 4/5/26</div>
+  <div>&copy; 2026 <a href="https://www.harrisxr.com" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">HarrisXR LLC</a> | MIT License | NASA materials &copy; NASA | <a href="javascript:void(0)" onclick="openAboutModal()" style="color:inherit;text-decoration:underline">About</a></div>
 </footer>
+
+<!-- About Modal -->
+<div class="about-modal-overlay" id="aboutModalOverlay" onclick="closeAboutModal()">
+  <div class="about-modal" onclick="event.stopPropagation()">
+    <div class="about-modal-content">
+      <h2 class="about-modal-title">About this app:</h2>
+      <p>This app was created by Aaron Harris on April 1st 2026.
+</p>
+<p>After the Artemis II launch, I had some difficulty in finding an at-a-glance and quick-to-open timeline view for Artemis II and its mission path and so this web page app was made to be a simplified illustrative view of the timeline.</p><p>This app is not meant to be highly scientifically accurate, but rather just a general locator of the mission and upcoming events. I did my best to make sure everything lined up for times and scales.</p>
+      <p>The app was created using Claude Code (Opus 4.6) with Codex 5.4 as an "investigator", and deliberately made a monofile (all-in-one) HTML CSS JS page so there were no outside dependencies. One file has it all.</p>
+      <p>Released "as-is" under the MIT License.</p>
+      <p class="about-modal-signature">&mdash; Aaron Harris<br><a href="mailto:aaron@harrisxr.com" style="color:var(--accent);text-decoration:underline">aaron@harrisxr.com</a></p>
+    </div>
+  </div>
+</div>
 
 <!-- Time Conversion Modal -->
 <div class="time-modal-overlay" id="timeModalOverlay" onclick="closeTimeModal()">
   <div class="time-modal" onclick="event.stopPropagation()">
-    <div class="time-modal-label" id="timeModalLabel">When this happens:</div>
+    <div class="time-modal-title" id="timeModalTitle">--</div>
+    <div class="time-modal-section-label">HAPPENS AT LOCAL TIME:</div>
     <div class="time-modal-day" id="timeModalDay">--</div>
     <div class="time-modal-local" id="timeModalLocal">--</div>
-    <div class="time-modal-hint">Your local time</div>
-    <div class="time-modal-met-label">Mission time</div>
+    <div class="time-modal-section-label" style="margin-top:10px" id="timeModalMetLabel">MISSION TIME</div>
     <div class="time-modal-met" id="timeModalMet">--</div>
   </div>
 </div>
@@ -2191,25 +2320,70 @@ function drawMarker(x, y) {
   ctx.restore();
 }
 
+// --- Ghost marker interaction state ---
+let _ghostStartScreen = null; // {x,y} in screen (canvas element) coords
+let _ghostEndScreen = null;
+let _ghostHover = null; // 'start' | 'end' | null
+const GHOST_HIT_RADIUS = 20; // px in screen space for hit detection
+
+function _clientToCanvas(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+function _hitTestGhostMarkers(screenX, screenY) {
+  // Returns 'start', 'end', or null
+  // Check end first so that if they overlap, end (next) wins over start (prev)
+  if (_ghostEndScreen && Math.abs(ghostEndU - ghostStartU) > 0.005) {
+    const dx = screenX - _ghostEndScreen.x, dy = screenY - _ghostEndScreen.y;
+    if (Math.sqrt(dx * dx + dy * dy) < GHOST_HIT_RADIUS) return 'end';
+  }
+  if (_ghostStartScreen) {
+    const dx = screenX - _ghostStartScreen.x, dy = screenY - _ghostStartScreen.y;
+    if (Math.sqrt(dx * dx + dy * dy) < GHOST_HIT_RADIUS) return 'start';
+  }
+  return null;
+}
+
+function _handleGhostMarkerClick(which) {
+  const idx = STAGES.findIndex(s => s.id === selectedStageId);
+  if (which === 'start') {
+    if (idx > 0) {
+      selectStage(STAGES[idx - 1].id);
+    } else {
+      zoomToSegment(selectedStageId);
+    }
+  } else if (which === 'end') {
+    if (idx < STAGES.length - 1) {
+      selectStage(STAGES[idx + 1].id);
+    } else {
+      zoomToSegment(selectedStageId);
+    }
+  }
+  // Flash the new stage's ghost markers
+  _flashCurrentStageGhosts();
+}
+
 // --- Draw ghost marker (azure hollow ring at selected stage) ---
-function drawGhostMarker(x, y) {
+function drawGhostMarker(x, y, which) {
   // Color matches the selected tab's state
   const selIdx = STAGES.findIndex(s => s.id === selectedStageId);
   const state = getStageColorState(selIdx);
-  const color = getStateColor(state, 0.6);
-  const glowColor = getStateColor(state, 0.15);
+  const isHovered = (_ghostHover === which);
+  const color = getStateColor(state, isHovered ? 0.9 : 0.6);
+  const glowColor = getStateColor(state, isHovered ? 0.35 : 0.15);
 
   ctx.save();
   ctx.beginPath();
-  ctx.arc(x, y, 7, 0, Math.PI * 2);
+  ctx.arc(x, y, isHovered ? 9 : 7, 0, Math.PI * 2);
   ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = isHovered ? 2.5 : 2;
   ctx.stroke();
-  // Inner subtle glow
+  // Outer glow
   ctx.beginPath();
-  ctx.arc(x, y, 10, 0, Math.PI * 2);
+  ctx.arc(x, y, isHovered ? 14 : 10, 0, Math.PI * 2);
   ctx.strokeStyle = glowColor;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = isHovered ? 4 : 3;
   ctx.stroke();
   ctx.restore();
 }
@@ -2493,8 +2667,8 @@ function render() {
   // Tick marks
   drawMissionTicks(path);
 
-  // Flash tick (triggered by todo checkbox click)
-  drawFlashTick(path);
+  // Flash effects (tick flashes from todo clicks, circle flashes from ghost marker clicks)
+  drawFlashes(path);
 
   // 4-hour timeline ticks (visible when zoomed in)
   drawTimelineTicks(path);
@@ -2502,9 +2676,12 @@ function render() {
   // Ghost markers (azure rings at selected stage start + end)
   const ghostStart = path.getPoint(ghostStartU);
   const ghostEnd = path.getPoint(ghostEndU);
-  drawGhostMarker(ghostStart.x, ghostStart.y);
+  // Store screen-space positions for hit-testing (apply pan+zoom transform)
+  _ghostStartScreen = { x: ghostStart.x * zoom + panX, y: ghostStart.y * zoom + panY };
+  _ghostEndScreen = { x: ghostEnd.x * zoom + panX, y: ghostEnd.y * zoom + panY };
+  drawGhostMarker(ghostStart.x, ghostStart.y, 'start');
   if (Math.abs(ghostEndU - ghostStartU) > 0.005) {
-    drawGhostMarker(ghostEnd.x, ghostEnd.y);
+    drawGhostMarker(ghostEnd.x, ghostEnd.y, 'end');
   }
 
   // Pulsing indicator at next stage start
@@ -2534,6 +2711,7 @@ function startRenderLoop() {
    ============================================================ */
 let selectedStageId = null;
 let liveStageId = null;
+let timeDisplayMode = 'met'; // 'met' or 'realtime'
 
 /* ============================================================
    COMPUTE LIVE STAGE
@@ -2590,27 +2768,40 @@ function updateLiveIndicators() {
 /* ============================================================
    CHIP STAGE NAVIGATION (prev/next arrows in title chip)
    ============================================================ */
+// Flash both ghost markers (start + end) of the current stage before navigating away
+function _flashCurrentStageGhosts() {
+  const path = getMissionPath();
+  if (!path) return;
+  const startPt = path.getPoint(ghostStartU);
+  const endPt = path.getPoint(ghostEndU);
+  if (startPt) triggerFlash({ shape: 'circle', x: startPt.x, y: startPt.y, radius: 10, duration: 1000 });
+  if (endPt && Math.abs(ghostEndU - ghostStartU) > 0.005) {
+    triggerFlash({ shape: 'circle', x: endPt.x, y: endPt.y, radius: 10, duration: 1000 });
+  }
+}
+
 function initChipNav() {
   // Left arrow: always prev stage
   document.getElementById('chipArrowLeft').addEventListener('click', () => {
     const idx = STAGES.findIndex(s => s.id === selectedStageId);
-    if (idx > 0) selectStage(STAGES[idx - 1].id);
+    if (idx > 0) { selectStage(STAGES[idx - 1].id); _flashCurrentStageGhosts(); }
   });
   // Right arrow: always next stage
   document.getElementById('chipArrowRight').addEventListener('click', () => {
     const idx = STAGES.findIndex(s => s.id === selectedStageId);
-    if (idx < STAGES.length - 1) selectStage(STAGES[idx + 1].id);
+    if (idx < STAGES.length - 1) { selectStage(STAGES[idx + 1].id); _flashCurrentStageGhosts(); }
   });
   // TODAY buttons: jump to live stage
   document.getElementById('chipTodayLeft').addEventListener('click', () => {
-    selectStage(liveStageId);
+    selectStage(liveStageId); _flashCurrentStageGhosts();
   });
   document.getElementById('chipTodayRight').addEventListener('click', () => {
-    selectStage(liveStageId);
+    selectStage(liveStageId); _flashCurrentStageGhosts();
   });
   // Center click: re-center zoom on current stage
   document.getElementById('chipCenter').addEventListener('click', () => {
     zoomToSegment(selectedStageId);
+    _flashCurrentStageGhosts();
   });
 }
 
@@ -2756,6 +2947,107 @@ function formatDuration(totalSeconds) {
   return (neg ? 'T- ' : 'T+ ') + str;
 }
 
+function formatMetRange(startSec, endSec) {
+  const fmt = (s) => {
+    const abs = Math.abs(Math.floor(s));
+    const d = Math.floor(abs / 86400);
+    const h = Math.floor((abs % 86400) / 3600);
+    const m = Math.floor((abs % 3600) / 60);
+    const sc = abs % 60;
+    const pad = n => String(n).padStart(2, '0');
+    return `T+ ${pad(d)}:${pad(h)}:${pad(m)}:${pad(sc)}`;
+  };
+  return fmt(startSec) + '<span class="hud-timer-to">TO:</span>' + fmt(endSec);
+}
+
+/* ============================================================
+   HUMAN-READABLE DURATION FORMATTING
+   Converts seconds to "2 Days 22 Min. 49 Sec." with unit labels
+   in smaller text. Options: { showSeconds: true, html: true }
+   ============================================================ */
+function formatHumanDuration(totalSeconds, opts = {}) {
+  const showSeconds = opts.showSeconds !== false;
+  const html = opts.html !== false;
+  const neg = totalSeconds < 0;
+  let s = Math.abs(Math.floor(totalSeconds));
+  const days = Math.floor(s / 86400); s %= 86400;
+  const hours = Math.floor(s / 3600); s %= 3600;
+  const mins = Math.floor(s / 60); s %= 60;
+  const secs = s;
+
+  const unit = (label) => html ? `<span class="time-unit">${label}</span>` : ` ${label}`;
+  const parts = [];
+  if (days > 0) parts.push(`${days} ${unit(days === 1 ? 'Day' : 'Days')}`);
+  if (hours > 0) parts.push(`${hours} ${unit(hours === 1 ? 'Hr.' : 'Hrs.')}`);
+  if (mins > 0 || parts.length === 0) parts.push(`${mins} ${unit('Min.')}`);
+  if (showSeconds) parts.push(`${secs} ${unit('Sec.')}`);
+
+  const prefix = neg ? '- ' : '';
+  return prefix + parts.join(' ');
+}
+
+/* Unified time formatter: returns MET or human-readable based on current mode.
+   sign: 'plus' or 'minus' (for T+ or T-). Used only in MET mode. */
+function formatTimeByMode(totalSeconds, sign = 'plus') {
+  if (timeDisplayMode === 'realtime') {
+    return { text: formatHumanDuration(totalSeconds, { showSeconds: false }), isHtml: true };
+  }
+  // MET mode — use existing formatters
+  if (sign === 'minus') {
+    return { text: formatCountdown(Math.abs(totalSeconds)), isHtml: false };
+  }
+  return { text: formatDuration(totalSeconds), isHtml: false };
+}
+
+/* Mode-aware range formatter for DONE stages (returns HTML) */
+function formatRangeByMode(startSec, endSec) {
+  if (timeDisplayMode === 'realtime') {
+    const startStr = formatHumanDuration(startSec, { showSeconds: false });
+    const endStr = formatHumanDuration(endSec, { showSeconds: false });
+    return startStr + '<span class="hud-timer-to">TO:</span>' + endStr;
+  }
+  return formatMetRange(startSec, endSec);
+}
+
+/* Toggle the time display mode and update all displays */
+function toggleTimeMode() {
+  timeDisplayMode = timeDisplayMode === 'met' ? 'realtime' : 'met';
+  updateTimeModeToggle();
+  updateTimer();
+  // Re-render activities if a stage is selected
+  if (selectedStageId) {
+    const stage = STAGES.find(s => s.id === selectedStageId);
+    if (stage && stage.activities) {
+      const sIdx = STAGES.findIndex(s => s.id === selectedStageId);
+      document.getElementById('tabActivities').innerHTML = renderActivities(stage.activities, getStageColorState(sIdx));
+    }
+  }
+}
+
+/* Update the toggle button visual state */
+function updateTimeModeToggle() {
+  const metDot = document.getElementById('timeModeMet');
+  const rtDot = document.getElementById('timeModeRealtime');
+  if (!metDot || !rtDot) return;
+
+  const activeColor = 'rgba(200, 200, 208, 0.7)';
+  const activeBorder = 'rgba(200, 200, 208, 0.7)';
+  const inactiveColor = 'transparent';
+  const inactiveBorder = 'rgba(200, 200, 208, 0.25)';
+
+  if (timeDisplayMode === 'met') {
+    metDot.style.background = activeColor;
+    metDot.style.borderColor = activeBorder;
+    rtDot.style.background = inactiveColor;
+    rtDot.style.borderColor = inactiveBorder;
+  } else {
+    rtDot.style.background = activeColor;
+    rtDot.style.borderColor = activeBorder;
+    metDot.style.background = inactiveColor;
+    metDot.style.borderColor = inactiveBorder;
+  }
+}
+
 function updateTimer() {
   if (!selectedStageId) return;
   const stage = STAGES.find(s => s.id === selectedStageId);
@@ -2771,21 +3063,29 @@ function updateTimer() {
   const timerColor = getStateCSSColor(selState);
   timerEl.style.color = timerColor;
 
-  // Two modes: past/current = mission time, future = countdown
+  // Three modes: past = stage time range, current = mission time, future = countdown
   const stageStartMs = T0.getTime() + stage.metSeconds * 1000;
-  const isPastOrCurrent = selState === 'past' || selState === 'current';
 
-  if (isPastOrCurrent) {
+  if (selState === 'past') {
+    // Show the MET range this stage spanned
+    timerEl.innerHTML = formatRangeByMode(stage.metSeconds, stage.metEndSeconds);
+    labelEl.textContent = 'Mission Times:';
+  } else if (selState === 'current') {
     // Show overall mission elapsed time
     const missionDiff = (now - T0.getTime()) / 1000;
-    timerEl.textContent = formatDuration(missionDiff);
+    const result = formatTimeByMode(missionDiff, 'plus');
+    timerEl[result.isHtml ? 'innerHTML' : 'textContent'] = result.text;
     labelEl.textContent = 'Current Mission Time';
   } else {
     // Show countdown to stage start
-    const diffSeconds = (now - stageStartMs) / 1000;
-    timerEl.textContent = formatDuration(diffSeconds);
+    const diffSeconds = Math.abs((now - stageStartMs) / 1000);
+    const result = formatTimeByMode(diffSeconds, 'minus');
+    timerEl[result.isHtml ? 'innerHTML' : 'textContent'] = result.text;
     labelEl.textContent = 'Begins';
   }
+
+  // Update toggle dot colors to match stage
+  updateTimeModeToggle();
 }
 
 /* ============================================================
@@ -2867,7 +3167,14 @@ let isPanning = false, panStartX = 0, panStartY = 0;
 
 function setupPanZoom() {
   canvas.addEventListener('mousedown', e => {
-    // First: check if we're clicking a debug control point
+    // First: check if we're clicking a ghost marker (stage nav)
+    const ghostScr = _clientToCanvas(e.clientX, e.clientY);
+    const ghostHit = _hitTestGhostMarkers(ghostScr.x, ghostScr.y);
+    if (ghostHit) {
+      _handleGhostMarkerClick(ghostHit);
+      return; // don't pan or drag
+    }
+    // Next: check if we're clicking a debug control point
     if (debugEditorOpen && segmentConfigs.length > 0) {
       const rect = canvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left - panX) / zoom;
@@ -2919,12 +3226,20 @@ function setupPanZoom() {
       panX = e.clientX - panStartX;
       panY = e.clientY - panStartY;
       clampPan();
+    } else {
+      // Ghost marker hover detection (desktop only)
+      const scr = _clientToCanvas(e.clientX, e.clientY);
+      const hit = _hitTestGhostMarkers(scr.x, scr.y);
+      if (hit !== _ghostHover) {
+        _ghostHover = hit;
+        canvas.style.cursor = hit ? 'pointer' : 'default';
+      }
     }
   });
   window.addEventListener('mouseup', () => {
     isPanning = false;
     dragTarget = null;
-    canvas.style.cursor = 'default';
+    canvas.style.cursor = _ghostHover ? 'pointer' : 'default';
   });
   canvas.addEventListener('wheel', e => {
     e.preventDefault();
@@ -2945,15 +3260,22 @@ function setupPanZoom() {
   let touchStartZoom = 1;
   let touchStartPanX = 0, touchStartPanY = 0;
   let touchStartMidX = 0, touchStartMidY = 0;
+  let _touchGhostHit = null;
+  let _touchStartPos = null;
+  const TAP_THRESHOLD = 10;
 
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
     cancelZoomLerp();
     if (e.touches.length === 1) {
+      const scr = _clientToCanvas(e.touches[0].clientX, e.touches[0].clientY);
+      _touchGhostHit = _hitTestGhostMarkers(scr.x, scr.y);
+      _touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       isPanning = true;
       panStartX = e.touches[0].clientX - panX;
       panStartY = e.touches[0].clientY - panY;
     } else if (e.touches.length === 2) {
+      _touchGhostHit = null;
       isPanning = false;
       const dx = e.touches[1].clientX - e.touches[0].clientX;
       const dy = e.touches[1].clientY - e.touches[0].clientY;
@@ -2968,6 +3290,11 @@ function setupPanZoom() {
 
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
+    if (_touchGhostHit && e.touches.length === 1 && _touchStartPos) {
+      const dx = e.touches[0].clientX - _touchStartPos.x;
+      const dy = e.touches[0].clientY - _touchStartPos.y;
+      if (Math.sqrt(dx * dx + dy * dy) > TAP_THRESHOLD) _touchGhostHit = null;
+    }
     if (e.touches.length === 1 && isPanning) {
       panX = e.touches[0].clientX - panStartX;
       panY = e.touches[0].clientY - panStartY;
@@ -2991,6 +3318,16 @@ function setupPanZoom() {
   }, { passive: false });
 
   canvas.addEventListener('touchend', e => {
+    if (_touchGhostHit) {
+      _handleGhostMarkerClick(_touchGhostHit);
+      _touchGhostHit = null;
+      _touchStartPos = null;
+      isPanning = false;
+      touchStartDist = 0;
+      return;
+    }
+    _touchGhostHit = null;
+    _touchStartPos = null;
     isPanning = false;
     touchStartDist = 0;
   }, { passive: false });
@@ -3487,15 +3824,9 @@ function metToLabel(metSeconds) {
   return `T+${m}m`;
 }
 
-function openTimeModal(metSeconds, stageState) {
-  const now = getEffectiveNow();
-  const missionElapsed = (now - T0.getTime()) / 1000;
-  const isPast = missionElapsed >= metSeconds;
-
-  // Header text + color based on stage state
-  const labelEl = document.getElementById('timeModalLabel');
-  labelEl.textContent = isPast ? 'When this happened:' : 'When this happens:';
-  labelEl.style.color = getStateCSSColor(stageState || 'future');
+function openTimeModal(metSeconds, stageState, activityText) {
+  // Activity title
+  document.getElementById('timeModalTitle').textContent = activityText || '';
 
   // Day of the week
   const eventDate = new Date(T0.getTime() + metSeconds * 1000);
@@ -3505,14 +3836,36 @@ function openTimeModal(metSeconds, stageState) {
   // Local time
   document.getElementById('timeModalLocal').textContent = metToLocalTimeStr(metSeconds);
 
-  // Mission time (T+ format)
-  document.getElementById('timeModalMet').textContent = formatDuration(metSeconds);
+  // Mission time section — conditional based on past/future and toggle mode
+  const now = getEffectiveNow();
+  const missionElapsed = (now - T0.getTime()) / 1000;
+  const isFuture = missionElapsed < metSeconds;
+  const metEl = document.getElementById('timeModalMet');
+  const metLabelEl = document.getElementById('timeModalMetLabel');
+
+  if (isFuture && timeDisplayMode === 'realtime') {
+    const secsUntil = metSeconds - missionElapsed;
+    metLabelEl.textContent = 'HAPPENS IN:';
+    metEl.innerHTML = formatHumanDuration(secsUntil, { showSeconds: false });
+  } else {
+    metLabelEl.textContent = 'MISSION TIME';
+    const result = formatTimeByMode(metSeconds, 'plus');
+    metEl[result.isHtml ? 'innerHTML' : 'textContent'] = result.text;
+  }
 
   document.getElementById('timeModalOverlay').classList.add('open');
 }
 
 function closeTimeModal() {
   document.getElementById('timeModalOverlay').classList.remove('open');
+}
+
+function openAboutModal() {
+  document.getElementById('aboutModalOverlay').classList.add('open');
+}
+
+function closeAboutModal() {
+  document.getElementById('aboutModalOverlay').classList.remove('open');
 }
 
 /* ============================================================
@@ -3528,12 +3881,13 @@ function renderActivities(activities, stageState) {
   return '<ul class="todo-list ' + stageColorClass + '">' + activities.map(a => {
     if (a.met == null) return '';
     const isPast = missionElapsed >= a.met;
+    const safeText = (a.text || '').replace(/'/g, '&#39;');
 
     // Canceled items get their own class and X mark; strikethrough if time has passed
     if (a.canceled) {
       const canceledPast = isPast ? ' past-activity' : '';
-      const label = formatDuration(a.met);
-      const timeHtml = ` <span class="activity-time" onclick="openTimeModal(${a.met}, '${stageState}')">${label}</span>`;
+      const result = formatTimeByMode(a.met, 'plus');
+      const timeHtml = ` <span class="activity-time" onclick="openTimeModal(${a.met}, '${stageState}', '${safeText}')">${result.text}</span>`;
       return `<li class="todo-item canceled-activity${canceledPast}"><span class="todo-checkbox" onclick="zoomToMet(${a.met})" style="cursor:pointer">&#10005;</span><span class="todo-text">${a.text}${timeHtml}</span></li>`;
     }
 
@@ -3541,24 +3895,27 @@ function renderActivities(activities, stageState) {
     const checkmark = isPast ? '&#10003;' : '';
     let timeHtml = '';
     if (isPast) {
-      const label = formatDuration(a.met);
-      timeHtml = ` <span class="activity-time" onclick="openTimeModal(${a.met}, '${stageState}')">${label}</span>`;
+      const result = formatTimeByMode(a.met, 'plus');
+      timeHtml = ` <span class="activity-time" onclick="openTimeModal(${a.met}, '${stageState}', '${safeText}')">${result.text}</span>`;
     } else {
       const secsUntil = a.met - missionElapsed;
-      const countdownStr = formatCountdown(secsUntil);
-      timeHtml = ` <span class="activity-time activity-countdown" data-met="${a.met}" onclick="openTimeModal(${a.met}, '${stageState}')">${countdownStr}</span>`;
+      const result = formatTimeByMode(secsUntil, 'minus');
+      const inPrefix = timeDisplayMode === 'realtime' ? '<span class="time-unit">in</span> ' : '';
+      timeHtml = ` <span class="activity-time activity-countdown" data-met="${a.met}" onclick="openTimeModal(${a.met}, '${stageState}', '${safeText}')">${inPrefix}${result.text}</span>`;
     }
     return `<li class="todo-item ${cls}"><span class="todo-checkbox" onclick="zoomToMet(${a.met})" style="cursor:pointer">${checkmark}</span><span class="todo-text">${a.text}${timeHtml}</span></li>`;
   }).join('') + '</ul>';
 }
 
 function formatCountdown(seconds) {
-  const s = Math.abs(Math.floor(seconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
+  let s = Math.abs(Math.floor(seconds));
+  const days = Math.floor(s / 86400); s %= 86400;
+  const h = Math.floor(s / 3600); s %= 3600;
+  const m = Math.floor(s / 60);
   const sec = s % 60;
   const pad = n => String(n).padStart(2, '0');
-  if (h > 0) return `T- ${h}:${pad(m)}:${pad(sec)}`;
+  if (days > 0) return `T- ${pad(days)}:${pad(h)}:${pad(m)}:${pad(sec)}`;
+  if (h > 0) return `T- ${pad(h)}:${pad(m)}:${pad(sec)}`;
   return `T- ${m}:${pad(sec)}`;
 }
 
@@ -3582,7 +3939,9 @@ function updateActivityCountdowns() {
       return;
     }
     const secsUntil = metVal - missionElapsed;
-    el.textContent = formatCountdown(secsUntil);
+    const result = formatTimeByMode(secsUntil, 'minus');
+    const inPrefix = timeDisplayMode === 'realtime' ? '<span class="time-unit">in</span> ' : '';
+    el.innerHTML = inPrefix + result.text;
   });
 }
 
@@ -3590,7 +3949,49 @@ function updateActivityCountdowns() {
    ZOOM-TO-SEGMENT ON TAB SELECT
    ============================================================ */
 let zoomLerp = null; // { startPanX, startPanY, startZoom, targetPanX, targetPanY, targetZoom, startTime, duration }
-let flashTick = null; // { metSeconds, startTime, duration }
+// --- Shared flash animation system ---
+// Each flash: { shape: 'tick'|'circle', startTime, duration, ...shapeData }
+// tick shapeData: { metSeconds }
+// circle shapeData: { x, y, radius }
+let _activeFlashes = [];
+
+function triggerFlash(flash) {
+  flash.startTime = performance.now();
+  flash.duration = flash.duration || 1000;
+  _activeFlashes.push(flash);
+}
+
+function drawFlashes(path) {
+  const now = performance.now();
+  _activeFlashes = _activeFlashes.filter(f => now - f.startTime < f.duration);
+
+  for (const f of _activeFlashes) {
+    const progress = (now - f.startTime) / f.duration;
+    const opacity = 0.8 * (1 - progress);
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+    ctx.lineWidth = 2;
+
+    if (f.shape === 'tick') {
+      const u = metToU(f.metSeconds);
+      const pos = path.getTickPosition(u);
+      if (pos) {
+        const len = 7;
+        ctx.beginPath();
+        ctx.moveTo(pos.x - len * Math.cos(pos.angle), pos.y - len * Math.sin(pos.angle));
+        ctx.lineTo(pos.x + len * Math.cos(pos.angle), pos.y + len * Math.sin(pos.angle));
+        ctx.stroke();
+      }
+    } else if (f.shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+}
 
 function zoomToSegment(stageId) {
   const idx = STAGES.findIndex(s => s.id === stageId);
@@ -3686,34 +4087,7 @@ function zoomToMet(metSeconds) {
   };
 
   // Trigger flash tick at the target position
-  flashTick = {
-    metSeconds,
-    startTime: performance.now(),
-    duration: 1000
-  };
-}
-
-function drawFlashTick(path) {
-  if (!flashTick) return;
-  const elapsed = performance.now() - flashTick.startTime;
-  if (elapsed >= flashTick.duration) { flashTick = null; return; }
-
-  const progress = elapsed / flashTick.duration;
-  const opacity = 0.8 * (1 - progress); // fade from 80% to 0
-
-  const u = metToU(flashTick.metSeconds);
-  const pos = path.getTickPosition(u);
-  if (!pos) return;
-
-  const len = 7; // 33% larger than normal ticks (5)
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(pos.x - len * Math.cos(pos.angle), pos.y - len * Math.sin(pos.angle));
-  ctx.lineTo(pos.x + len * Math.cos(pos.angle), pos.y + len * Math.sin(pos.angle));
-  ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.restore();
+  triggerFlash({ shape: 'tick', metSeconds, duration: 1000 });
 }
 
 function init() {
