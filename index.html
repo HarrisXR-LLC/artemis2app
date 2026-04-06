@@ -21,6 +21,11 @@
 <meta name="twitter:description" content="Track the Artemis II mission in real time">
 <meta name="twitter:image"       content="https://harrisxr-llc.github.io/artemis2app/og-image.jpg">
 
+<!-- Three.js (local, from official npm package via unpkg) -->
+<script type="importmap">
+{ "imports": { "three": "./three.module.min.js" } }
+</script>
+
 <style>
 /* ============================================================
    GLOBAL THEME
@@ -168,6 +173,13 @@ html, body {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
 }
+@keyframes todoFlash {
+  0% { background: rgba(57, 255, 20, 0.4); }
+  100% { background: transparent; }
+}
+.todo-checkbox.flashing {
+  animation: todoFlash 0.6s ease-out;
+}
 
 .live-badge, .done-badge, .next-badge {
   display: none;
@@ -303,10 +315,15 @@ html, body {
   z-index: 1;
 }
 
-#vizCanvas {
+#vizContainer {
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
+}
+#vizContainer canvas {
+  display: block;
   width: 100%;
   height: 100%;
 }
@@ -326,6 +343,9 @@ html, body {
   bottom: calc(25vh + 16px);
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .hud-chip {
@@ -341,6 +361,71 @@ html, body {
   width: 100%;
   height: 52px;
   overflow: hidden;
+}
+.hud-chip--scrubber {
+  width: 280px;
+  padding: 6px 12px;
+  margin-bottom: 6px;
+  pointer-events: auto;
+}
+.hud-chip--scrubber input[type="range"] {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.hud-chip--scrubber input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--lime);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--lime-glow);
+}
+.hud-chip--scrubber input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--lime);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--lime-glow);
+}
+.track-buttons {
+  display: none; /* hidden by default, shown with ?debug=true */
+  gap: 4px;
+  margin-top: 6px;
+  justify-content: center;
+}
+.track-buttons.debug-visible {
+  display: flex;
+}
+.track-btn {
+  font-size: 0.6em;
+  font-family: var(--font-mono);
+  padding: 3px 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.track-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent);
+  color: var(--text-bright);
+}
+.track-btn.active {
+  background: rgba(0, 127, 255, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .hud-chip--timer {
   position: relative;
@@ -1006,108 +1091,6 @@ html, body {
 /* ============================================================
    DEBUG PATH EDITOR PANEL
    ============================================================ */
-.debug-btn {
-  display: inline-block;
-  margin-top: 6px;
-  padding: 3px 8px;
-  font-size: 0.55em;
-  color: rgba(200,200,208,0.3);
-  background: none;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: var(--font-mono);
-}
-.debug-btn:hover { color: var(--accent); border-color: var(--accent); }
-
-.debug-panel {
-  display: none;
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: 50vh;
-  background: #0d0d18;
-  border-top: 2px solid var(--accent);
-  z-index: 100;
-  flex-direction: column;
-  font-size: 12px;
-  color: var(--text);
-}
-.debug-panel.open { display: flex; }
-
-.debug-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: #10101a;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  flex-shrink: 0;
-}
-.debug-header-title { font-weight: 700; color: var(--accent); }
-.debug-header button {
-  background: none; border: 1px solid rgba(255,255,255,0.15);
-  color: var(--text); padding: 3px 10px; border-radius: 4px;
-  cursor: pointer; font-size: 11px; margin-left: 6px;
-}
-.debug-header button:hover { border-color: var(--accent); color: var(--accent); }
-.debug-header .copy-btn { color: var(--lime); border-color: rgba(57,255,20,0.3); }
-.debug-header .copy-btn:hover { border-color: var(--lime); }
-
-.debug-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 12px 20px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.25) transparent;
-}
-
-.seg-editor {
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 6px;
-  margin-bottom: 8px;
-  padding: 8px 10px;
-  background: rgba(255,255,255,0.02);
-}
-.seg-editor-title {
-  font-weight: 600;
-  font-size: 11px;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.seg-editor-title .seg-color {
-  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
-}
-.seg-editor select, .seg-editor input {
-  background: #1a1a28;
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--text);
-  padding: 3px 6px;
-  border-radius: 3px;
-  font-size: 11px;
-  font-family: var(--font-mono);
-  width: 70px;
-}
-.seg-editor select { width: auto; }
-.seg-editor label {
-  font-size: 10px;
-  color: rgba(200,200,208,0.5);
-  margin-right: 2px;
-}
-.seg-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  margin-top: 4px;
-}
-.seg-field-group {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-.seg-field-group.locked input { opacity: 0.4; }
-
 /* ============================================================
    SHORT VIEWPORT RULE (< 600px height)
    ============================================================ */
@@ -1211,15 +1194,14 @@ html, body {
     <div class="sidebar-tabs" id="sidebarTabs"></div>
     <div class="sidebar-disclaimer">
       Approximate mission data &middot; Updated as mission progresses<br>
-      Data &copy; NASA &middot; Updated 4/5/26
-      <button class="debug-btn" onclick="toggleDebugPanel()">DEBUG</button>
+      Data &copy; NASA &middot; Updated 4/6/26
     </div>
   </nav>
 
   <!-- ========== MAIN CONTENT ========== -->
   <main class="content">
     <div class="viz-container">
-      <canvas id="vizCanvas"></canvas>
+      <div id="vizContainer"></div>
 
       <div class="hud hud--top-left">
         <div class="hud-chip hud-chip--nav">
@@ -1236,6 +1218,17 @@ html, body {
 
 
       <div class="hud hud--bottom-left">
+        <div class="hud-chip hud-chip--scrubber">
+          <input type="range" id="missionScrubber" min="0" max="100" value="0" step="0.01">
+          <div class="track-buttons">
+            <button class="track-btn" data-track="orion">ORION</button>
+            <button class="track-btn" data-track="moon">MOON</button>
+            <button class="track-btn" data-track="earth">EARTH</button>
+            <button class="track-btn" data-track="lunar-orbit">LUNAR ORBIT</button>
+            <button class="track-btn" data-track="free">FREE FLOAT</button>
+            <button class="track-btn" id="debugToggleBtn">DEBUG</button>
+          </div>
+        </div>
         <div class="hud-chip hud-chip--timer">
           <div class="hud-timer-label" id="hudTimerLabel">Mission Elapsed Time</div>
           <div class="hud-timer" id="hudTimer">T+ 00:00:00:00</div>
@@ -1274,7 +1267,7 @@ html, body {
 </div>
 
 <footer class="status-bar">
-  <div class="status-bar-disclaimer">Approximate mission data &middot; Updated as mission progresses &middot; Updated 4/5/26</div>
+  <div class="status-bar-disclaimer">Approximate mission data &middot; Updated as mission progresses &middot; Updated 4/6/26</div>
   <div>&copy; 2026 <a href="https://www.harrisxr.com" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">HarrisXR LLC</a> | MIT License | NASA materials &copy; NASA | <a href="javascript:void(0)" onclick="openAboutModal()" style="color:inherit;text-decoration:underline">About</a></div>
 </footer>
 
@@ -1305,76 +1298,23 @@ html, body {
   </div>
 </div>
 
-<!-- Debug Path Editor Panel -->
-<div class="debug-panel" id="debugPanel">
-  <div class="debug-header">
-    <span class="debug-header-title">Path Editor</span>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <button onclick="smoothSelectedJoint()" style="font-size:10px;padding:2px 8px;background:none;border:1px solid rgba(255,255,255,0.15);color:var(--text);border-radius:3px;cursor:pointer">Smooth Bezier</button>
-      <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">
-        <input type="checkbox" id="debugHighlight" onchange="debugHighlightPath=this.checked"> Highlight
-      </label>
-      <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">
-        <input type="checkbox" id="debugHourMarks" onchange="debugShowHourMarks=this.checked"> Hours
-      </label>
-      <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer">
-        <input type="checkbox" id="debugTimeTicks" onchange="debugShowTimeTicks=this.checked"> Time Ticks
-      </label>
-      <label style="font-size:11px;display:flex;align-items:center;gap:3px">
-        T+ <input type="text" id="debugTimeOverride" placeholder="HH:MM:SS" style="width:80px;background:#1a1a28;border:1px solid rgba(255,255,255,0.15);color:var(--color-live);padding:2px 5px;border-radius:3px;font-family:var(--font-mono);font-size:11px" onchange="applyTimeOverride(this.value)">
-        <button onclick="clearTimeOverride()" style="font-size:10px;padding:2px 6px;background:none;border:1px solid rgba(255,255,255,0.1);color:var(--text);border-radius:3px;cursor:pointer">Reset</button>
-      </label>
-      <button class="copy-btn" onclick="copySegmentConfig()">Copy Config</button>
-      <button onclick="toggleDebugPanel()">Close</button>
-    </div>
-  </div>
-  <div class="debug-body" id="debugBody"></div>
-</div>
 
 <script>
 /* ============================================================
    MISSION TIMING CONFIGURATION
-   ============================================================
-   T0 = exact liftoff time (confirmed by NASA live blog).
-   All MET values in seconds from T0.
-
-   TO UPDATE: Change T0 if launch time shifts. Change any
-   MET_* constant if NASA revises a stage time. Everything
-   else derives automatically.
    ============================================================ */
 
 // T+0: April 1, 2026, 6:35:12 PM EDT — confirmed actual liftoff
 const T0 = new Date('2026-04-01T18:35:12-04:00');
 
-// --- Debug time override ---
-let debugTimeOverrideMs = null; // null = use real time, otherwise = overridden Date.now() value
+// Scrubber override: null = real time, otherwise = overridden timestamp in ms
+let scrubberOverrideMs = null;
+
+// Lerp duration for all smooth time transitions (seconds)
+const LERP_DURATION = 1.4;
 
 function getEffectiveNow() {
-  return debugTimeOverrideMs != null ? debugTimeOverrideMs : Date.now();
-}
-
-function applyTimeOverride(val) {
-  // Parse HH:MM:SS or D:HH:MM:SS
-  const parts = val.trim().split(':').map(Number);
-  if (parts.some(isNaN)) return;
-  let totalSec;
-  if (parts.length === 3) totalSec = parts[0] * 3600 + parts[1] * 60 + parts[2];
-  else if (parts.length === 4) totalSec = parts[0] * 86400 + parts[1] * 3600 + parts[2] * 60 + parts[3];
-  else return;
-  debugTimeOverrideMs = T0.getTime() + totalSec * 1000;
-  computeLiveStage();
-  updateLiveIndicators();
-  if (selectedStageId) {
-    const stage = STAGES.find(s => s.id === selectedStageId);
-    if (stage) { selectStage(null); selectStage(stage.id); } // force refresh
-  }
-}
-
-function clearTimeOverride() {
-  debugTimeOverrideMs = null;
-  document.getElementById('debugTimeOverride').value = '';
-  computeLiveStage();
-  updateLiveIndicators();
+  return scrubberOverrideMs != null ? scrubberOverrideMs : Date.now();
 }
 
 // --- Helper: D/HH:MM:SS → total seconds ---
@@ -1755,656 +1695,26 @@ const STAGES = [
     ]
   }
 ];
+// Expose STAGES to the module script
+window.STAGES = STAGES;
 
 
 /* ============================================================
-   VISUALIZATION ENGINE (Phase 2)
+   (Visualization engine removed — now in scene.js via Three.js)
+   ============================================================ */
+let currentScene = null;
+
+/* ============================================================
+   UI HELPER FUNCTIONS (moved from old viz engine)
    ============================================================ */
 
-// --- Canvas setup ---
-const canvas = document.getElementById('vizCanvas');
-const ctx = canvas.getContext('2d');
-let canvasW = 0, canvasH = 0; // logical (CSS) pixels
-let dpr = 1;
-let missionPathCache = null;     // declared early so resizeCanvas can reference it
-let currentScene = null;         // declared early so resizeCanvas can reference it
-
-function resizeCanvas() {
-  const container = canvas.parentElement;
-  const rect = container.getBoundingClientRect();
-  dpr = window.devicePixelRatio || 1;
-  canvasW = rect.width;
-  canvasH = rect.height;
-  canvas.width = canvasW * dpr;
-  canvas.height = canvasH * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  // Rescale segment configs and invalidate path cache on resize
-  missionPathCache = null;
-  if (AUTHORED_SEGMENTS && AUTHORED_SEGMENTS.length > 0) {
-    initSegmentConfigs();
-  }
-}
-
-// --- Seeded PRNG for stable starfield ---
-function mulberry32(seed) {
-  return function() {
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-// --- Starfield (static dots, don't zoom, cover extended area) ---
-const STAR_COUNT = 400;
-let stars = [];
-
-function generateStars() {
-  const rng = mulberry32(42);
-  stars = [];
-  // Generate stars over a 3x3 area (centered) so panning never runs out
-  for (let i = 0; i < STAR_COUNT; i++) {
-    stars.push({
-      x: -1 + rng() * 3,   // -1 to 2 (normalized, covers pan range)
-      y: -1 + rng() * 3,
-      size: 0.5 + rng() * 1.0,
-      brightness: 0.2 + rng() * 0.5
-    });
-  }
-}
-generateStars();
-
-function updateStarfield(timestamp) {
-  // No-op — stars are static dots
-}
-
-function drawStarfield() {
-  // Draw at screen pixels, ignoring pan/zoom (stars feel infinitely far away)
-  ctx.save();
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // reset to screen coords
-  for (const star of stars) {
-    ctx.globalAlpha = star.brightness;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(star.x * canvasW, star.y * canvasH, star.size, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  ctx.restore();
-  // Re-apply pan/zoom for everything after
-  applyPanZoom();
-}
-
-// --- Earth rendering ---
-function drawEarth(cx, cy, radius) {
-  // Atmospheric glow
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius + 4, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(79, 195, 247, 0.15)';
-  ctx.lineWidth = 3;
-  ctx.stroke();
-  ctx.restore();
-
-  // Earth body
-  const grad = ctx.createRadialGradient(cx - radius * 0.2, cy - radius * 0.2, radius * 0.1, cx, cy, radius);
-  grad.addColorStop(0, '#2196f3');
-  grad.addColorStop(0.4, '#1a6fc4');
-  grad.addColorStop(0.85, '#0d3b6e');
-  grad.addColorStop(1, '#082040');
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  // Subtle continental hints (simplified landmasses as lighter patches)
-  ctx.save();
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = '#4caf50';
-  // Americas-ish
-  ctx.beginPath();
-  ctx.ellipse(cx - radius * 0.25, cy - radius * 0.1, radius * 0.15, radius * 0.35, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-  // Africa/Europe-ish
-  ctx.beginPath();
-  ctx.ellipse(cx + radius * 0.15, cy - radius * 0.05, radius * 0.12, radius * 0.3, 0.1, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // KSC dot (~28.5°N, on the left-center of visible face)
-  const kscAngle = -Math.PI * 0.16; // roughly 28.5° N latitude
-  const kscX = cx + radius * 0.7 * Math.cos(kscAngle - 0.8);
-  const kscY = cy + radius * 0.7 * Math.sin(kscAngle - 0.8);
-  ctx.beginPath();
-  ctx.arc(kscX, kscY, 2, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(200, 200, 208, 0.5)';
-  ctx.fill();
-  // KSC label (gray)
-  ctx.font = `${Math.max(8, canvasH * 0.018)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
-  ctx.fillStyle = 'rgba(200, 200, 208, 0.4)';
-  ctx.fillText('KSC', kscX + 5, kscY + 3);
-
-  // "Earth" label below
-  ctx.font = `${Math.max(9, canvasH * 0.022)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
-  ctx.fillStyle = 'rgba(200, 200, 208, 0.35)';
-  ctx.textAlign = 'center';
-  ctx.fillText('Earth', cx, cy + radius + 18);
-  ctx.textAlign = 'start';
-}
-
-// --- Moon rendering ---
-function drawMoon(cx, cy, radius) {
-  // Moon body
-  const grad = ctx.createRadialGradient(cx - radius * 0.25, cy - radius * 0.25, radius * 0.1, cx, cy, radius);
-  grad.addColorStop(0, '#d4d4d4');
-  grad.addColorStop(0.5, '#c0c0c0');
-  grad.addColorStop(1, '#808080');
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  // Craters
-  ctx.save();
-  ctx.globalAlpha = 0.2;
-  ctx.fillStyle = '#666666';
-  ctx.beginPath();
-  ctx.arc(cx + radius * 0.25, cy - radius * 0.2, radius * 0.18, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx - radius * 0.3, cy + radius * 0.15, radius * 0.12, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + radius * 0.1, cy + radius * 0.35, radius * 0.1, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // "Moon" label
-  ctx.font = `${Math.max(9, canvasH * 0.022)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
-  ctx.fillStyle = 'rgba(200, 200, 208, 0.35)';
-  ctx.textAlign = 'center';
-  ctx.fillText('Moon', cx, cy + radius + 16);
-  ctx.textAlign = 'start';
-}
-
-// --- Unified portrait layout ---
-function getUnifiedLayout() {
-  return {
-    earthCx: canvasW * 0.50,       // centered on vertical axis
-    earthCy: canvasH * 0.15,       // upper area
-    earthR:  canvasH * 0.075,      // slightly smaller for more room
-    moonCx:  canvasW * 0.50,       // centered on same axis
-    moonCy:  canvasH * 0.82,       // lower area
-    moonR:   canvasH * 0.028       // Moon radius
-  };
-}
-
-// ============================================================
-// MISSION MILESTONES — single source of truth for path positions
-// ============================================================
-const MISSION_MILESTONES = [
-  { met: MET_LAUNCH_START,        u: 0.000, label: 'Liftoff',    showLabel: 'never' },
-  { met: TICK_CORE_SEP,           u: 0.005, label: 'Core Sep',   showLabel: 'never' },
-  { met: TICK_PRM,                u: 0.015, label: 'PRM',        showLabel: 'desktop' },
-  { met: TICK_ARB_TIG,            u: 0.030, label: 'ARB',        showLabel: 'desktop' },
-  { met: MET_PROX_OPS_START,      u: 0.040, label: 'Prox Ops',  showLabel: 'desktop' },
-  { met: MET_HEO_CHECKOUTS_START, u: 0.055, label: 'HEO',       showLabel: 'desktop' },
-  { met: MET_TLI_START,           u: 0.080, label: 'TLI',        showLabel: 'always' },
-  { met: TICK_OTC1,               u: 0.18,  label: 'OTC-1',      showLabel: 'always' },
-  { met: TICK_OTC2,               u: 0.28,  label: 'OTC-2',      showLabel: 'always' },
-  { met: TICK_OTC3,               u: 0.38,  label: 'OTC-3',      showLabel: 'always' },
-  { met: TICK_LUNAR_SOI,          u: 0.42,  label: 'Lunar SOI',  showLabel: 'desktop' },
-  { met: TICK_CLOSEST,            u: 0.50,  label: 'Closest',    showLabel: 'always' },
-  { met: TICK_MAX_EARTH,          u: 0.505, label: 'Max Dist',   showLabel: 'never' },
-  { met: TICK_SOI_EXIT,           u: 0.58,  label: 'SOI Exit',   showLabel: 'desktop' },
-  { met: TICK_RTC1,               u: 0.66,  label: 'RTC-1',      showLabel: 'always' },
-  { met: TICK_RTC2,               u: 0.86,  label: 'RTC-2',      showLabel: 'always' },
-  { met: TICK_RTC3,               u: 0.94,  label: 'RTC-3',      showLabel: 'always' },
-  { met: TICK_CM_SM_SEP,          u: 0.97,  label: 'CM/SM Sep',  showLabel: 'desktop' },
-  { met: TICK_ENTRY_IF,           u: 0.985, label: 'Entry',      showLabel: 'desktop' },
-  { met: TICK_SPLASHDOWN,         u: 1.00,  label: 'Splashdown', showLabel: 'always' }
-];
-
-// Segment-based u mapping: each of the 11 stages maps to an equal u slice.
-// Stage 0 = u [0, 1/11], Stage 1 = u [1/11, 2/11], etc.
-// Within each stage, MET progress maps linearly along the segment.
-
-function getStageURange(stage) {
-  const idx = STAGES.findIndex(s => s.id === stage.id);
-  if (idx < 0) return [0, 1];
-  const n = STAGES.length;
-  return [idx / n, (idx + 1) / n];
-}
-
-function metToU(metSeconds) {
-  // Find which stage this MET falls in
-  for (let i = 0; i < STAGES.length; i++) {
-    const s = STAGES[i];
-    if (metSeconds < s.metEndSeconds || i === STAGES.length - 1) {
-      const [uStart, uEnd] = getStageURange(s);
-      const stageDuration = s.metEndSeconds - s.metSeconds;
-      const elapsed = metSeconds - s.metSeconds;
-      const frac = stageDuration > 0 ? Math.max(0, Math.min(1, elapsed / stageDuration)) : 0;
-      return uStart + frac * (uEnd - uStart);
-    }
-  }
-  return 1;
-}
-
-// ============================================================
-// MISSION PATH (legacy fallback — segment configs are the primary path source)
-// ============================================================
-
-class MissionPath {
-  constructor(layout) {
-    const { earthCx: cx, earthCy, earthR, moonCy, moonR } = layout;
-
-    // --- Geometry parameters ---
-    const earthLobeR = earthR * 1.5;                       // Earth orbit lobe radius
-    const moonLobeR = Math.max(moonR * 4.5, canvasH * 0.07); // Moon flyby lobe radius
-    // Waist at 75% of the way from Earth to Moon (pinch near the Moon)
-    const waist = { x: cx, y: earthCy + 0.75 * (moonCy - earthCy) };
-
-    // --- Earth circle angles (screen coords: 0=right, π/2=down, π=left, 3π/2=up) ---
-    const kscAngle = 0.35;                                 // KSC start (right, slightly below)
-    const earthExitAngle = 2.4;                            // exit lower-left (~137°)
-    // Go clockwise (increasing angle) for ~1.2 revolutions
-    const earthEndAngle = kscAngle + Math.PI * 2 + (earthExitAngle - kscAngle);
-
-    // --- Moon circle angles ---
-    // Entrance upper-left, exit upper-right, arc goes through bottom (closest approach)
-    const moonEntAngle = Math.PI + 0.5;                    // upper-left (~209° → x left, y up)
-    const moonExitAngle = -(0.5);                          // upper-right → same as 2π-0.5
-    // Arc goes counterclockwise (decreasing angle) through bottom: π+0.5 → π → π/2(bottom) → 0 → -0.5
-
-    // --- Sample the 5 pieces ---
-
-    // PIECE 1: Earth circle (~1.2 revolutions clockwise)
-    const earthArc = this._sampleArc(cx, earthCy, earthLobeR, kscAngle, earthEndAngle, 100);
-    const exitPt = earthArc[earthArc.length - 1];
-
-    // PIECE 2: Outbound curve (Earth exit → waist → Moon entrance)
-    // Quadratic bezier with control point computed so curve passes through waist at t=0.5
-    const moonEntPt = {
-      x: cx + moonLobeR * Math.cos(moonEntAngle),
-      y: moonCy + moonLobeR * Math.sin(moonEntAngle)
-    };
-    const outboundCtrl = {
-      x: 2 * waist.x - 0.5 * exitPt.x - 0.5 * moonEntPt.x,
-      y: 2 * waist.y - 0.5 * exitPt.y - 0.5 * moonEntPt.y
-    };
-    const outbound = this._sampleQuadBezier(exitPt, outboundCtrl, moonEntPt, 80);
-
-    // PIECE 3: Moon circle (~270° counterclockwise through bottom)
-    const moonArc = this._sampleArc(cx, moonCy, moonLobeR, moonEntAngle, moonExitAngle, 60);
-    const moonExitPt = moonArc[moonArc.length - 1];
-
-    // PIECE 4: Return curve (Moon exit → waist → Earth approach)
-    const approachPt = {
-      x: cx + earthLobeR * 0.65,
-      y: earthCy + earthLobeR * 0.75
-    };
-    const returnCtrl = {
-      x: 2 * waist.x - 0.5 * moonExitPt.x - 0.5 * approachPt.x,
-      y: 2 * waist.y - 0.5 * moonExitPt.y - 0.5 * approachPt.y
-    };
-    const returnCurve = this._sampleQuadBezier(moonExitPt, returnCtrl, approachPt, 80);
-
-    // PIECE 5: Landing (short straight line to splashdown)
-    const splashPt = { x: cx + earthR * 0.3, y: earthCy + earthR * 0.55 };
-    const landing = this._sampleStraight(approachPt, splashPt, 10);
-
-    // --- Build segments with u ranges ---
-    this.segments = [
-      { uStart: 0.00, uEnd: 0.08, points: earthArc },
-      { uStart: 0.08, uEnd: 0.45, points: outbound },
-      { uStart: 0.45, uEnd: 0.55, points: moonArc },
-      { uStart: 0.55, uEnd: 0.97, points: returnCurve },
-      { uStart: 0.97, uEnd: 1.00, points: landing }
-    ];
-  }
-
-  _sampleArc(cx, cy, r, startAngle, endAngle, steps) {
-    const pts = [];
-    for (let i = 0; i <= steps; i++) {
-      const angle = startAngle + (endAngle - startAngle) * (i / steps);
-      pts.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) });
-    }
-    return pts;
-  }
-
-  _sampleQuadBezier(p0, ctrl, p2, steps) {
-    const pts = [];
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const mt = 1 - t;
-      pts.push({
-        x: mt * mt * p0.x + 2 * mt * t * ctrl.x + t * t * p2.x,
-        y: mt * mt * p0.y + 2 * mt * t * ctrl.y + t * t * p2.y
-      });
-    }
-    return pts;
-  }
-
-  _sampleStraight(a, b, steps) {
-    const pts = [];
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      pts.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-    }
-    return pts;
-  }
-
-  getPoint(u) {
-    u = Math.max(0, Math.min(1, u));
-    for (const seg of this.segments) {
-      if (u <= seg.uEnd || seg === this.segments[this.segments.length - 1]) {
-        const localT = seg.uEnd > seg.uStart
-          ? Math.max(0, Math.min(1, (u - seg.uStart) / (seg.uEnd - seg.uStart)))
-          : 0;
-        const idx = localT * (seg.points.length - 1);
-        const i = Math.min(Math.floor(idx), seg.points.length - 2);
-        const frac = idx - i;
-        return {
-          x: seg.points[i].x + (seg.points[i + 1].x - seg.points[i].x) * frac,
-          y: seg.points[i].y + (seg.points[i + 1].y - seg.points[i].y) * frac
-        };
-      }
-    }
-    const last = this.segments[this.segments.length - 1];
-    return last.points[last.points.length - 1];
-  }
-
-  getTangent(u) {
-    const d = 0.003;
-    const p1 = this.getPoint(Math.max(0, u - d));
-    const p2 = this.getPoint(Math.min(1, u + d));
-    return Math.atan2(p2.y - p1.y, p2.x - p1.x);
-  }
-
-  getSubPath(u0, u1) {
-    const steps = Math.max(20, Math.round(Math.abs(u1 - u0) * 300));
-    const path = new Path2D();
-    for (let i = 0; i <= steps; i++) {
-      const u = u0 + (u1 - u0) * (i / steps);
-      const p = this.getPoint(u);
-      if (i === 0) path.moveTo(p.x, p.y);
-      else path.lineTo(p.x, p.y);
-    }
-    return path;
-  }
-
-  getTickPosition(u) {
-    const p = this.getPoint(u);
-    const angle = this.getTangent(u);
-    return { x: p.x, y: p.y, angle: angle + Math.PI / 2 };
-  }
-}
-
-// --- Mission path cache ---
-// (missionPathCache declared near canvas setup above)
-
-function getMissionPath() {
-  if (!missionPathCache || missionPathCache._cw !== canvasW || missionPathCache._ch !== canvasH) {
-    if (segmentConfigs.length > 0) {
-      // Build from segment configs (authored or editor)
-      missionPathCache = buildPathFromConfigs();
-    } else {
-      const layout = getUnifiedLayout();
-      missionPathCache = new MissionPath(layout);
-    }
-    missionPathCache._cw = canvasW;
-    missionPathCache._ch = canvasH;
-  }
-  return missionPathCache;
-}
-
-function buildPathFromConfigs() {
-  // Build a MissionPath-like object from segmentConfigs
-  const segments = segmentConfigs.map((cfg, i) => {
-    const uStart = i / segmentConfigs.length;
-    const uEnd = (i + 1) / segmentConfigs.length;
-    const points = sampleSegment(cfg, 50);
-    return { uStart, uEnd, points };
-  });
-  // Return object with same API as MissionPath
-  return {
-    segments,
-    getPoint(u) {
-      u = Math.max(0, Math.min(1, u));
-      for (const seg of this.segments) {
-        if (u <= seg.uEnd || seg === this.segments[this.segments.length - 1]) {
-          const localT = seg.uEnd > seg.uStart
-            ? Math.max(0, Math.min(1, (u - seg.uStart) / (seg.uEnd - seg.uStart)))
-            : 0;
-          const idx = localT * (seg.points.length - 1);
-          const i = Math.min(Math.floor(idx), seg.points.length - 2);
-          const frac = idx - i;
-          return {
-            x: seg.points[i].x + (seg.points[i + 1].x - seg.points[i].x) * frac,
-            y: seg.points[i].y + (seg.points[i + 1].y - seg.points[i].y) * frac
-          };
-        }
-      }
-      const last = this.segments[this.segments.length - 1];
-      return last.points[last.points.length - 1];
-    },
-    getTangent(u) {
-      const d = 0.003;
-      const p1 = this.getPoint(Math.max(0, u - d));
-      const p2 = this.getPoint(Math.min(1, u + d));
-      return Math.atan2(p2.y - p1.y, p2.x - p1.x);
-    },
-    getSubPath(u0, u1) {
-      const steps = Math.max(20, Math.round(Math.abs(u1 - u0) * 300));
-      const path = new Path2D();
-      for (let i = 0; i <= steps; i++) {
-        const u = u0 + (u1 - u0) * (i / steps);
-        const p = this.getPoint(u);
-        if (i === 0) path.moveTo(p.x, p.y); else path.lineTo(p.x, p.y);
-      }
-      return path;
-    },
-    getTickPosition(u) {
-      const p = this.getPoint(u);
-      const angle = this.getTangent(u);
-      return { x: p.x, y: p.y, angle: angle + Math.PI / 2 };
-    }
-  };
-}
-
-// --- Milestone validation (dev tool — call from console) ---
-function validateMilestones() {
-  const path = getMissionPath();
-  const layout = getUnifiedLayout();
-  console.log('=== Milestone Validation ===');
-  console.log(`Canvas: ${canvasW}x${canvasH}, Earth: (${layout.earthCx.toFixed(0)},${layout.earthCy.toFixed(0)}), Moon: (${layout.moonCx.toFixed(0)},${layout.moonCy.toFixed(0)})`);
-  for (const ms of MISSION_MILESTONES) {
-    const p = path.getPoint(ms.u);
-    const side = p.x < layout.earthCx ? 'LEFT' : p.x > layout.earthCx ? 'RIGHT' : 'CENTER';
-    console.log(`${ms.label.padEnd(12)} u=${ms.u.toFixed(3)} → (${p.x.toFixed(0)}, ${p.y.toFixed(0)}) ${side}`);
-  }
-}
-
-// --- Scene management (simplified) ---
-
-function buildScene(stageId) {
-  const stage = STAGES.find(s => s.id === stageId);
-  if (!stage) return null;
-  return { stageId: stage.id, stage: stage };
-}
-
-function onStageSelected(stageId) {
-  currentScene = buildScene(stageId);
-  markerTrail = [];
-  computeGhostPosition();
-}
-
-// --- Marker state ---
-let markerU = 0;              // live position (0-1) — always from system clock
-let ghostStartU = 0;          // selected stage start position
-let ghostEndU = 0;            // selected stage end position
-let markerTrail = [];
-const TRAIL_LENGTH = 5;
-const TRAIL_INTERVAL = 50;
-let lastTrailTime = 0;
-
-function computeMarkerPosition() {
-  const now = getEffectiveNow();
-  const elapsedSec = (now - T0.getTime()) / 1000;
-  markerU = metToU(elapsedSec);
-}
-
-function computeGhostPosition() {
-  if (!currentScene) return;
-  const [startU, endU] = getStageURange(currentScene.stage);
-  ghostStartU = startU;
-  ghostEndU = endU;
-}
-
-function updateMarkerTrail(timestamp) {
-  if (timestamp - lastTrailTime > TRAIL_INTERVAL) {
-    lastTrailTime = timestamp;
-    const path = getMissionPath();
-    const pos = path.getPoint(markerU);
-    if (pos) {
-      markerTrail.push({ x: pos.x, y: pos.y });
-      if (markerTrail.length > TRAIL_LENGTH) markerTrail.shift();
-    }
-  }
-}
-
-// --- Draw live marker (lime green dot + glow + trail) ---
-function drawMarker(x, y) {
-  ctx.save();
-
-  // Trail
-  for (let i = 0; i < markerTrail.length; i++) {
-    const alpha = 0.15 + 0.15 * (i / markerTrail.length);
-    const size = 1.5 + 1.0 * (i / markerTrail.length);
-    ctx.beginPath();
-    ctx.arc(markerTrail[i].x, markerTrail[i].y, size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(57, 255, 20, ${alpha})`;
-    ctx.fill();
-  }
-
-  // Glow dot
-  ctx.shadowColor = '#39ff14';
-  ctx.shadowBlur = 12;
-  ctx.beginPath();
-  ctx.arc(x, y, 5, 0, Math.PI * 2);
-  ctx.fillStyle = '#39ff14';
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // White center
-  ctx.beginPath();
-  ctx.arc(x, y, 2, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.fill();
-
-  // Triangle dorito pointing down at the dot
-  const triSize = 8;
-  const triY = y - 14;
-  ctx.beginPath();
-  ctx.moveTo(x, y - 8);           // bottom point (near dot)
-  ctx.lineTo(x - triSize, triY - triSize);  // top-left
-  ctx.lineTo(x + triSize, triY - triSize);  // top-right
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(57, 255, 20, 0.8)';
-  ctx.fill();
-
-  // "LIVE" text above triangle
-  ctx.font = `bold ${Math.max(9, canvasH * 0.016)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
-  ctx.fillStyle = '#39ff14';
-  ctx.textAlign = 'center';
-  ctx.fillText('LIVE', x, triY - triSize - 4);
-
-  ctx.restore();
-}
-
-// --- Ghost marker interaction state ---
-let _ghostStartScreen = null; // {x,y} in screen (canvas element) coords
-let _ghostEndScreen = null;
-let _ghostHover = null; // 'start' | 'end' | null
-const GHOST_HIT_RADIUS = 20; // px in screen space for hit detection
-
-function _clientToCanvas(clientX, clientY) {
-  const rect = canvas.getBoundingClientRect();
-  return { x: clientX - rect.left, y: clientY - rect.top };
-}
-
-function _hitTestGhostMarkers(screenX, screenY) {
-  // Returns 'start', 'end', or null
-  // Check end first so that if they overlap, end (next) wins over start (prev)
-  if (_ghostEndScreen && Math.abs(ghostEndU - ghostStartU) > 0.005) {
-    const dx = screenX - _ghostEndScreen.x, dy = screenY - _ghostEndScreen.y;
-    if (Math.sqrt(dx * dx + dy * dy) < GHOST_HIT_RADIUS) return 'end';
-  }
-  if (_ghostStartScreen) {
-    const dx = screenX - _ghostStartScreen.x, dy = screenY - _ghostStartScreen.y;
-    if (Math.sqrt(dx * dx + dy * dy) < GHOST_HIT_RADIUS) return 'start';
-  }
-  return null;
-}
-
-function _handleGhostMarkerClick(which) {
-  const idx = STAGES.findIndex(s => s.id === selectedStageId);
-  if (which === 'start') {
-    if (idx > 0) {
-      selectStage(STAGES[idx - 1].id);
-    } else {
-      zoomToSegment(selectedStageId);
-    }
-  } else if (which === 'end') {
-    if (idx < STAGES.length - 1) {
-      selectStage(STAGES[idx + 1].id);
-    } else {
-      zoomToSegment(selectedStageId);
-    }
-  }
-  // Flash the new stage's ghost markers
-  _flashCurrentStageGhosts();
-}
-
-// --- Draw ghost marker (azure hollow ring at selected stage) ---
-function drawGhostMarker(x, y, which) {
-  // Color matches the selected tab's state
-  const selIdx = STAGES.findIndex(s => s.id === selectedStageId);
-  const state = getStageColorState(selIdx);
-  const isHovered = (_ghostHover === which);
-  const color = getStateColor(state, isHovered ? 0.9 : 0.6);
-  const glowColor = getStateColor(state, isHovered ? 0.35 : 0.15);
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x, y, isHovered ? 9 : 7, 0, Math.PI * 2);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = isHovered ? 2.5 : 2;
-  ctx.stroke();
-  // Outer glow
-  ctx.beginPath();
-  ctx.arc(x, y, isHovered ? 14 : 10, 0, Math.PI * 2);
-  ctx.strokeStyle = glowColor;
-  ctx.lineWidth = isHovered ? 4 : 3;
-  ctx.stroke();
-  ctx.restore();
-}
-
-// --- Draw traveled vs upcoming path ---
+// 3-color state system for stage indicators
 function getStageColorState(stageIdx) {
   const liveIdx = STAGES.findIndex(s => s.id === liveStageId);
   if (stageIdx < liveIdx) return 'past';
   if (stageIdx === liveIdx) return 'current';
-  if (stageIdx === liveIdx + 1) return 'next'; // still tracked for NEXT badge, but uses future color
+  if (stageIdx === liveIdx + 1) return 'next';
   return 'future';
-}
-
-// 3-color system: dark blue (past), green (current), bright blue (future/next)
-function getStateColor(state, alpha) {
-  if (state === 'past') return `rgba(42, 108, 199, ${alpha})`;
-  if (state === 'current') return `rgba(57, 255, 20, ${alpha})`;
-  return `rgba(111, 168, 255, ${alpha})`; // future + next
 }
 
 function getStateCSSColor(state) {
@@ -2413,302 +1723,16 @@ function getStateCSSColor(state) {
   return '#6fa8ff'; // future + next
 }
 
-function drawTraveledPath(path, liveU) {
-  // Draw each stage segment in its color. Past=solid, current=solid+dashed, future=dashed.
-  // Selected stage = thicker.
-  const selectedIdx = STAGES.findIndex(s => s.id === selectedStageId);
-
-  ctx.save();
-  for (let i = 0; i < STAGES.length; i++) {
-    const [segStartU, segEndU] = getStageURange(STAGES[i]);
-    const state = getStageColorState(i);
-    const isSelected = i === selectedIdx;
-    const zoomScale = Math.max(0.5, 1 / Math.sqrt(zoom));
-    const baseWidth = (isSelected ? 4 : 2) * zoomScale;
-
-    if (state === 'past') {
-      // Solid purple
-      const seg = path.getSubPath(segStartU, segEndU);
-      ctx.strokeStyle = getStateColor('past', 0.7);
-      ctx.lineWidth = baseWidth;
-      ctx.setLineDash([]);
-      ctx.stroke(seg);
-
-    } else if (state === 'current') {
-      // Solid green up to liveU, dashed green for the rest
-      if (liveU > segStartU) {
-        const solidEnd = Math.min(liveU, segEndU);
-        const seg = path.getSubPath(segStartU, solidEnd);
-        ctx.strokeStyle = getStateColor('current', 0.7);
-        ctx.lineWidth = baseWidth;
-        ctx.setLineDash([]);
-        ctx.stroke(seg);
-      }
-      if (liveU < segEndU) {
-        const dashStart = Math.max(liveU, segStartU);
-        const seg = path.getSubPath(dashStart, segEndU);
-        ctx.strokeStyle = getStateColor('current', 0.5);
-        ctx.lineWidth = baseWidth;
-        ctx.setLineDash([6, 4]);
-        ctx.stroke(seg);
-        ctx.setLineDash([]);
-      }
-
-    } else {
-      // Dashed bright blue (both next and future)
-      const seg = path.getSubPath(segStartU, segEndU);
-      ctx.strokeStyle = getStateColor('future', 0.45);
-      ctx.lineWidth = baseWidth;
-      ctx.setLineDash([7, 5]);
-      ctx.stroke(seg);
-      ctx.setLineDash([]);
-    }
-  }
-  ctx.restore();
+function getStageURange(stage) {
+  const idx = STAGES.findIndex(s => s.id === stage.id);
+  if (idx < 0) return [0, 1];
+  const n = STAGES.length;
+  return [idx / n, (idx + 1) / n];
 }
 
-// --- Draw stage titles at segment midpoints + sub-stage ticks ---
-function drawMissionTicks(path) {
-  if (!currentScene) return;
-  const [selStartU, selEndU] = getStageURange(currentScene.stage);
-  const selectedIdx = STAGES.findIndex(s => s.id === selectedStageId);
-  const drawnLabels = [];
-
-  ctx.save();
-
-  // 1. Draw stage title at midpoint — only for the selected stage
-  if (selectedIdx >= 0) {
-    const titleFont = `bold ${Math.max(9, canvasH * 0.016)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
-    ctx.font = titleFont;
-    ctx.textAlign = 'center';
-    const [uStart, uEnd] = getStageURange(STAGES[selectedIdx]);
-    const midU = (uStart + uEnd) / 2;
-    const midPt = path.getPoint(midU);
-    const state = getStageColorState(selectedIdx);
-    const color = getStateCSSColor(state);
-    ctx.fillStyle = color;
-    ctx.globalAlpha = 0.85;
-    ctx.fillText(STAGES[selectedIdx].name, midPt.x, midPt.y - 12);
-    drawnLabels.push({ x: midPt.x, y: midPt.y - 12 });
-    ctx.globalAlpha = 1;
-  }
-
-  // 2. Draw sub-stage milestone labels (only for selected stage)
-  const tickFont = `${Math.max(7, canvasH * 0.013)}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-sans')}`;
-  ctx.font = tickFont;
-
-  const msWithU = MISSION_MILESTONES.map(ms => ({ ...ms, computedU: metToU(ms.met) }));
-  const stageMs = msWithU.filter(ms => ms.computedU >= selStartU - 0.001 && ms.computedU <= selEndU + 0.001);
-
-  for (const ms of stageMs) {
-    const pos = path.getTickPosition(ms.computedU);
-    if (!pos) continue;
-
-    // Tick mark
-    const len = 5;
-    ctx.beginPath();
-    ctx.moveTo(pos.x - len * Math.cos(pos.angle), pos.y - len * Math.sin(pos.angle));
-    ctx.lineTo(pos.x + len * Math.cos(pos.angle), pos.y + len * Math.sin(pos.angle));
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Label (gray)
-    const labelOff = 30;
-    const lx = pos.x + labelOff * Math.cos(pos.angle);
-    const ly = pos.y + labelOff * Math.sin(pos.angle);
-
-    let collides = false;
-    for (const prev of drawnLabels) {
-      const dx = lx - prev.x, dy = ly - prev.y;
-      if (Math.sqrt(dx * dx + dy * dy) < 20) { collides = true; break; }
-    }
-    if (collides) continue;
-
-    ctx.fillStyle = 'rgba(200, 200, 208, 0.5)';
-    ctx.globalAlpha = 0.7;
-    ctx.textAlign = 'center';
-    ctx.fillText(ms.label, lx, ly + 3);
-    ctx.globalAlpha = 1;
-    drawnLabels.push({ x: lx, y: ly });
-  }
-
-  ctx.restore();
+function onStageSelected(stageId) {
+  currentScene = { stageId };
 }
-
-// --- Draw timeline ticks when zoomed in (debug feature) ---
-function drawTimelineTicks(path) {
-  if (!debugShowTimeTicks) return;
-  if (!currentScene) return;
-  const selectedIdx = STAGES.findIndex(s => s.id === selectedStageId);
-  if (selectedIdx < 0) return;
-
-  // Fade in: 0 at zoom<=1.3, full at zoom>=2.0
-  const fadeAlpha = Math.max(0, Math.min(1, (zoom - 1.3) / 0.7));
-  if (fadeAlpha <= 0) return;
-
-  const stage = STAGES[selectedIdx];
-  const state = getStageColorState(selectedIdx);
-  const [uStart, uEnd] = getStageURange(stage);
-
-  // Compute 6 evenly-spaced sub-times at 1/7 through 6/7 of stage duration
-  const stageDuration = stage.metEndSeconds - stage.metSeconds;
-  const ticks = [];
-  for (let i = 1; i <= 6; i++) {
-    ticks.push(stage.metSeconds + stageDuration * (i / 7));
-  }
-
-  ctx.save();
-
-  // Font: one-third the sub-stage tick font size
-  const fontSize = Math.max(4, canvasH * 0.013 / 3);
-  const fontFamily = getComputedStyle(document.documentElement).getPropertyValue('--font-sans');
-  ctx.font = `${fontSize}px ${fontFamily}`;
-  ctx.textAlign = 'center';
-
-  const tickLen = 2;
-  const labelOff = 20;
-
-  for (const met of ticks) {
-    const u = metToU(met);
-    if (u < uStart - 0.001 || u > uEnd + 0.001) continue;
-
-    const pos = path.getTickPosition(u);
-    if (!pos) continue;
-
-    const lx = pos.x + labelOff * Math.cos(pos.angle);
-    const ly = pos.y + labelOff * Math.sin(pos.angle);
-
-    // Mini tick mark
-    ctx.beginPath();
-    ctx.moveTo(pos.x - tickLen * Math.cos(pos.angle), pos.y - tickLen * Math.sin(pos.angle));
-    ctx.lineTo(pos.x + tickLen * Math.cos(pos.angle), pos.y + tickLen * Math.sin(pos.angle));
-    ctx.strokeStyle = getStateColor(state, 0.4 * fadeAlpha);
-    ctx.lineWidth = 0.75;
-    ctx.stroke();
-
-    // Wall-clock label
-    const date = new Date(T0.getTime() + met * 1000);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    let hours = date.getHours();
-    const mins = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-    hours = hours % 12 || 12;
-    const label = `${month}/${day} ${hours}:${mins}${ampm}`;
-
-    ctx.fillStyle = getStateColor(state, 0.5 * fadeAlpha);
-    ctx.fillText(label, lx, ly + 3);
-  }
-
-  ctx.restore();
-}
-
-// --- Draw pulsing glow at the next stage's start point ---
-function drawNextStageIndicator(path) {
-  const liveIdx = STAGES.findIndex(s => s.id === liveStageId);
-  const nextIdx = liveIdx + 1;
-  if (nextIdx >= STAGES.length) return;
-
-  const [nextStartU] = getStageURange(STAGES[nextIdx]);
-  const pos = path.getPoint(nextStartU);
-  if (!pos) return;
-
-  const t = performance.now() / 1000;
-  const pulse = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 2.5)); // 0.4–1.0 range
-
-  ctx.save();
-  // Outer glow
-  ctx.beginPath();
-  ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(111, 168, 255, ${0.15 * pulse})`;
-  ctx.lineWidth = 4;
-  ctx.stroke();
-  // Inner ring
-  ctx.beginPath();
-  ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(111, 168, 255, ${0.6 * pulse})`;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  // Center dot
-  ctx.beginPath();
-  ctx.arc(pos.x, pos.y, 2.5, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(111, 168, 255, ${0.8 * pulse})`;
-  ctx.fill();
-  ctx.restore();
-}
-
-// --- Animation loop ---
-function update(timestamp) {
-  updateStarfield(timestamp);
-  computeMarkerPosition();
-  updateMarkerTrail(timestamp);
-  updateZoomLerp();
-  updateIntroLerp();
-}
-
-function render() {
-  if (!currentScene) return;
-  // Reset transform and clear
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, canvasW, canvasH);
-
-  // Starfield drawn at screen coords (doesn't zoom), then re-applies pan/zoom
-  drawStarfield();
-
-  const layout = getUnifiedLayout();
-  const path = getMissionPath();
-
-  // Base path: traveled + upcoming (split at live position)
-  drawTraveledPath(path, markerU);
-
-  // (Leg highlight is now integrated into drawTraveledPath via thickness)
-
-  // Bodies
-  drawEarth(layout.earthCx, layout.earthCy, layout.earthR);
-  drawMoon(layout.moonCx, layout.moonCy, layout.moonR);
-
-  // Tick marks
-  drawMissionTicks(path);
-
-  // Flash effects (tick flashes from todo clicks, circle flashes from ghost marker clicks)
-  drawFlashes(path);
-
-  // 4-hour timeline ticks (visible when zoomed in)
-  drawTimelineTicks(path);
-
-  // Ghost markers (azure rings at selected stage start + end)
-  const ghostStart = path.getPoint(ghostStartU);
-  const ghostEnd = path.getPoint(ghostEndU);
-  // Store screen-space positions for hit-testing (apply pan+zoom transform)
-  _ghostStartScreen = { x: ghostStart.x * zoom + panX, y: ghostStart.y * zoom + panY };
-  _ghostEndScreen = { x: ghostEnd.x * zoom + panX, y: ghostEnd.y * zoom + panY };
-  drawGhostMarker(ghostStart.x, ghostStart.y, 'start');
-  if (Math.abs(ghostEndU - ghostStartU) > 0.005) {
-    drawGhostMarker(ghostEnd.x, ghostEnd.y, 'end');
-  }
-
-  // Pulsing indicator at next stage start
-  drawNextStageIndicator(path);
-
-  // Live marker (always at current position)
-  const livePos = path.getPoint(markerU);
-  drawMarker(livePos.x, livePos.y);
-
-  // Debug editor handles
-  drawDebugHourMarks(path);
-  drawDebugHandles();
-}
-
-function startRenderLoop() {
-  function frame(timestamp) {
-    update(timestamp);
-    render();
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
-
 
 /* ============================================================
    UI STATE
@@ -2718,11 +1742,23 @@ let liveStageId = null;
 let timeDisplayMode = 'met'; // 'met' or 'realtime'
 
 /* ============================================================
+   GET STAGE FOR A GIVEN MET
+   Returns the stage ID whose MET range contains the given time.
+   ============================================================ */
+function getStageForMET(metSec) {
+  for (let i = STAGES.length - 1; i >= 0; i--) {
+    if (metSec >= STAGES[i].metSeconds) return STAGES[i].id;
+  }
+  return STAGES[0].id;
+}
+
+/* ============================================================
    COMPUTE LIVE STAGE
    Determines which stage is currently active based on system clock.
    ============================================================ */
 function computeLiveStage() {
-  const now = getEffectiveNow();
+  // Always use real time — liveStageId reflects actual mission state, not scrubbed time
+  const now = Date.now();
   const elapsedSec = (now - T0.getTime()) / 1000;
 
   let newLiveId = STAGES[0].id; // default: before launch
@@ -2772,53 +1808,143 @@ function updateLiveIndicators() {
 /* ============================================================
    CHIP STAGE NAVIGATION (prev/next arrows in title chip)
    ============================================================ */
-// Flash both ghost markers (start + end) of the current stage before navigating away
-function _flashCurrentStageGhosts() {
-  const path = getMissionPath();
-  if (!path) return;
-  const startPt = path.getPoint(ghostStartU);
-  const endPt = path.getPoint(ghostEndU);
-  if (startPt) triggerFlash({ shape: 'circle', x: startPt.x, y: startPt.y, radius: 10, duration: 1000 });
-  if (endPt && Math.abs(ghostEndU - ghostStartU) > 0.005) {
-    triggerFlash({ shape: 'circle', x: endPt.x, y: endPt.y, radius: 10, duration: 1000 });
-  }
-}
 
 function initChipNav() {
   // Left arrow: always prev stage
   document.getElementById('chipArrowLeft').addEventListener('click', () => {
     const idx = STAGES.findIndex(s => s.id === selectedStageId);
-    if (idx > 0) { selectStage(STAGES[idx - 1].id); _flashCurrentStageGhosts(); }
+    if (idx > 0) { selectStage(STAGES[idx - 1].id); }
   });
   // Right arrow: always next stage
   document.getElementById('chipArrowRight').addEventListener('click', () => {
     const idx = STAGES.findIndex(s => s.id === selectedStageId);
-    if (idx < STAGES.length - 1) { selectStage(STAGES[idx + 1].id); _flashCurrentStageGhosts(); }
+    if (idx < STAGES.length - 1) { selectStage(STAGES[idx + 1].id); }
   });
-  // TODAY buttons: jump to live stage
-  document.getElementById('chipTodayLeft').addEventListener('click', () => {
-    selectStage(liveStageId); _flashCurrentStageGhosts();
-  });
-  document.getElementById('chipTodayRight').addEventListener('click', () => {
-    selectStage(liveStageId); _flashCurrentStageGhosts();
-  });
-  // Center click: re-center zoom on current stage
+  // TODAY buttons: clear scrubber override and jump to live stage in real-time
+  document.getElementById('chipTodayLeft').addEventListener('click', jumpToLive);
+  document.getElementById('chipTodayRight').addEventListener('click', jumpToLive);
+  // Center click: re-zoom camera on Orion (no time change)
   document.getElementById('chipCenter').addEventListener('click', () => {
-    zoomToSegment(selectedStageId);
-    _flashCurrentStageGhosts();
+    if (window._artemisScene) window._artemisScene.returnCameraToOrion();
   });
+}
+
+// Reusable smooth lerp to any MET time, optionally selecting a stage
+function smoothLerpToMET(targetMET, stageId) {
+  scrubberOverrideMs = T0.getTime() + targetMET * 1000;
+
+  // Select the stage if provided
+  if (stageId) {
+    const oldId = selectedStageId;
+    selectedStageId = null; // force re-render
+    selectStage(stageId, false);
+  }
+
+  if (window._artemisScene) {
+    window._artemisScene.lerpToMET(targetMET, LERP_DURATION, (interpMET) => {
+      scrubberOverrideMs = T0.getTime() + interpMET * 1000;
+      const scrubber = document.getElementById('missionScrubber');
+      if (scrubber) scrubber.value = interpMET;
+      computeLiveStage();
+      updateTimer();
+      updateActivityCountdowns();
+      updateChipArrows();
+    });
+    window._artemisScene.returnCameraToOrion();
+    window._artemisScene.setLiveMode(false);
+  }
+}
+// Todo checkbox click: lerp to that activity's MET, flash checkbox, flash pip
+function onTodoCheckboxClick(el, metSeconds) {
+  // Flash the checkbox
+  el.classList.remove('flashing');
+  void el.offsetWidth; // trigger reflow to restart animation
+  el.classList.add('flashing');
+
+  // Determine which stage this MET belongs to
+  const stageId = getStageForMET(metSeconds);
+
+  // Smooth lerp to the activity's MET
+  smoothLerpToMET(metSeconds, stageId);
+
+  // Flash the corresponding pip on the trajectory
+  if (window._artemisScene) {
+    window._artemisScene.flashActivityPip(metSeconds);
+  }
+}
+window.onTodoCheckboxClick = onTodoCheckboxClick;
+
+// Expose for module script access
+window.smoothLerpToMET = smoothLerpToMET;
+window.getStageForMET = getStageForMET;
+
+function jumpToLive() {
+  const realMET = Math.max(0, Math.min(MET_MISSION_END, (Date.now() - T0.getTime()) / 1000));
+
+  if (window._artemisScene) {
+    // Smooth MET lerp to live time, then switch to live mode
+    window._artemisScene.lerpToMET(realMET, LERP_DURATION, (interpMET) => {
+      // onUpdate: keep scrubber in sync during lerp
+      scrubberOverrideMs = T0.getTime() + interpMET * 1000;
+      const scrubber = document.getElementById('missionScrubber');
+      if (scrubber) scrubber.value = interpMET;
+      computeLiveStage();
+      updateTimer();
+      updateActivityCountdowns();
+      updateChipArrows();
+    }, () => {
+      // onComplete: switch to true live mode
+      scrubberOverrideMs = null;
+      computeLiveStage();
+      selectedStageId = null;
+      selectStage(liveStageId, false);
+      updateSceneMET();
+      updateTimer();
+      updateActivityCountdowns();
+      updateChipArrows();
+      if (window._artemisScene) window._artemisScene.setLiveMode(true);
+    });
+    window._artemisScene.returnCameraToOrion();
+  } else {
+    // Fallback: instant
+    scrubberOverrideMs = null;
+    const scrubber = document.getElementById('missionScrubber');
+    if (scrubber) scrubber.value = realMET;
+    computeLiveStage();
+    selectedStageId = null;
+    selectStage(liveStageId, false);
+    updateSceneMET();
+    updateTimer();
+    updateActivityCountdowns();
+    updateChipArrows();
+  }
 }
 
 function updateChipArrows() {
   const idx = STAGES.findIndex(s => s.id === selectedStageId);
-  const liveIdx = STAGES.findIndex(s => s.id === liveStageId);
 
   document.getElementById('chipArrowLeft').disabled = (idx <= 0);
   document.getElementById('chipArrowRight').disabled = (idx >= STAGES.length - 1);
 
-  // Show TODAY button: right side for past stages, left side for future stages
-  document.getElementById('chipTodayRight').style.display = (idx < liveIdx) ? 'flex' : 'none';
-  document.getElementById('chipTodayLeft').style.display = (idx > liveIdx) ? 'flex' : 'none';
+  // TODAY button: show whenever scrubber is overridden (not live)
+  // Position based on whether scrubbed time is ahead or behind real live time
+  if (scrubberOverrideMs == null) {
+    // Locked to live — hide both TODAY buttons
+    document.getElementById('chipTodayRight').style.display = 'none';
+    document.getElementById('chipTodayLeft').style.display = 'none';
+  } else {
+    const realMET = (Date.now() - T0.getTime()) / 1000;
+    const scrubbedMET = (scrubberOverrideMs - T0.getTime()) / 1000;
+    if (scrubbedMET < realMET) {
+      // Scrubbed behind live time — show TODAY on right (to go forward to live)
+      document.getElementById('chipTodayRight').style.display = 'flex';
+      document.getElementById('chipTodayLeft').style.display = 'none';
+    } else {
+      // Scrubbed ahead of live time — show TODAY on left (to go back to live)
+      document.getElementById('chipTodayLeft').style.display = 'flex';
+      document.getElementById('chipTodayRight').style.display = 'none';
+    }
+  }
 }
 
 
@@ -2849,16 +1975,53 @@ function initInfoTabs() {
    Updates UI to show the selected stage's content.
    Does NOT affect the live indicator.
    ============================================================ */
-function selectStage(stageId) {
+function selectStage(stageId, jumpTimeline = true) {
   if (selectedStageId === stageId) return;
   selectedStageId = stageId;
 
   const stage = STAGES.find(s => s.id === stageId);
   if (!stage) return;
 
-  // Update visualization scene + zoom to segment (skip on initial load)
+  // Jump scrubber/timeline to this stage's start MET (unless called from scrubber itself)
+  if (jumpTimeline) {
+    const targetMET = stage.metSeconds;
+    // Set override immediately so we're no longer in live mode
+    scrubberOverrideMs = T0.getTime() + targetMET * 1000;
+
+    if (window._artemisScene) {
+      // Smooth MET lerp over 0.5s
+      window._artemisScene.lerpToMET(targetMET, LERP_DURATION, (interpMET) => {
+        // onUpdate: keep scrubber and UI in sync during lerp
+        scrubberOverrideMs = T0.getTime() + interpMET * 1000;
+        const scrubber = document.getElementById('missionScrubber');
+        if (scrubber) scrubber.value = interpMET;
+        computeLiveStage();
+        updateTimer();
+        updateActivityCountdowns();
+        updateChipArrows();
+      });
+      // Smoothly return camera to Orion simultaneously
+      window._artemisScene.returnCameraToOrion();
+      window._artemisScene.setLiveMode(false);
+    } else {
+      // Fallback: instant jump if scene not available
+      const scrubber = document.getElementById('missionScrubber');
+      if (scrubber) scrubber.value = targetMET;
+      computeLiveStage();
+      updateSceneMET();
+      updateTimer();
+      updateActivityCountdowns();
+    }
+  }
+
+  // Update scene state
   onStageSelected(stageId);
-  if (_initialLoadComplete) zoomToSegment(stageId);
+
+  // Update Three.js stage labels
+  const stageIdx = STAGES.findIndex(s => s.id === stageId);
+  if (window._artemisScene) {
+    window._artemisScene.setSelectedStage(stageIdx);
+  }
 
   // Update active tab classes
   document.querySelectorAll('.strip-tab').forEach(tab => {
@@ -2871,7 +2034,6 @@ function selectStage(stageId) {
   // HUD: title + flight day with status badge
   document.getElementById('hudTitle').textContent = stage.title;
   const hudFlightDay = document.getElementById('hudFlightDay');
-  const stageIdx = STAGES.findIndex(s => s.id === stageId);
   const stageState = getStageColorState(stageIdx);
   let badgePrefix = '';
   let badgeSuffix = '';
@@ -3053,39 +2215,36 @@ function updateTimeModeToggle() {
 }
 
 function updateTimer() {
-  if (!selectedStageId) return;
-  const stage = STAGES.find(s => s.id === selectedStageId);
-  if (!stage) return;
-
-  const now = getEffectiveNow();
   const timerEl = document.getElementById('hudTimer');
   const labelEl = document.getElementById('hudTimerLabel');
 
-  // Color timer to match selected tab's state color
-  const selIdx = STAGES.findIndex(s => s.id === selectedStageId);
-  const selState = getStageColorState(selIdx);
-  const timerColor = getStateCSSColor(selState);
-  timerEl.style.color = timerColor;
+  // Always show the MET at the scrubber's current position
+  const now = getEffectiveNow();
+  const metSec = Math.max(0, (now - T0.getTime()) / 1000);
+  const result = formatTimeByMode(metSec, 'plus');
+  timerEl[result.isHtml ? 'innerHTML' : 'textContent'] = result.text;
 
-  // Three modes: past = stage time range, current = mission time, future = countdown
-  const stageStartMs = T0.getTime() + stage.metSeconds * 1000;
+  // Color timer based on live vs scrubbed
+  if (scrubberOverrideMs == null) {
+    timerEl.style.color = getStateCSSColor('current'); // lime green
+  } else {
+    const realMET = (Date.now() - T0.getTime()) / 1000;
+    timerEl.style.color = metSec < realMET
+      ? getStateCSSColor('past')    // azure
+      : getStateCSSColor('future'); // cornflower
+  }
 
-  if (selState === 'past') {
-    // Show the MET range this stage spanned
-    timerEl.innerHTML = formatRangeByMode(stage.metSeconds, stage.metEndSeconds);
-    labelEl.textContent = 'Mission Times:';
-  } else if (selState === 'current') {
-    // Show overall mission elapsed time
-    const missionDiff = (now - T0.getTime()) / 1000;
-    const result = formatTimeByMode(missionDiff, 'plus');
-    timerEl[result.isHtml ? 'innerHTML' : 'textContent'] = result.text;
+  // Timer label: reflects whether we're at live time or scrubbed
+  if (scrubberOverrideMs == null) {
     labelEl.textContent = 'Current Mission Time';
   } else {
-    // Show countdown to stage start
-    const diffSeconds = Math.abs((now - stageStartMs) / 1000);
-    const result = formatTimeByMode(diffSeconds, 'minus');
-    timerEl[result.isHtml ? 'innerHTML' : 'textContent'] = result.text;
-    labelEl.textContent = 'Begins';
+    const realMET = (Date.now() - T0.getTime()) / 1000;
+    const scrubbedMET = (scrubberOverrideMs - T0.getTime()) / 1000;
+    if (scrubbedMET < realMET) {
+      labelEl.textContent = 'Earlier Mission Time';
+    } else {
+      labelEl.textContent = 'Future Mission Time';
+    }
   }
 
   // Update toggle dot colors to match stage
@@ -3160,652 +2319,6 @@ function scrollStripToLive() {
 }
 
 /* ============================================================
-   INITIALIZATION
-   ============================================================ */
-/* ============================================================
-   CANVAS PAN + ZOOM
-   ============================================================ */
-let panX = 0, panY = 0, zoom = 1;
-let _initialLoadComplete = false;
-let isPanning = false, panStartX = 0, panStartY = 0;
-
-function setupPanZoom() {
-  canvas.addEventListener('mousedown', e => {
-    // First: check if we're clicking a ghost marker (stage nav)
-    const ghostScr = _clientToCanvas(e.clientX, e.clientY);
-    const ghostHit = _hitTestGhostMarkers(ghostScr.x, ghostScr.y);
-    if (ghostHit) {
-      _handleGhostMarkerClick(ghostHit);
-      return; // don't pan or drag
-    }
-    // Next: check if we're clicking a debug control point
-    if (debugEditorOpen && segmentConfigs.length > 0) {
-      const rect = canvas.getBoundingClientRect();
-      const mx = (e.clientX - rect.left - panX) / zoom;
-      const my = (e.clientY - rect.top - panY) / zoom;
-      let bestDist = 15 / zoom;
-      let best = null;
-      segmentConfigs.forEach((cfg, i) => {
-        const checkPt = (pt, key) => {
-          if (!pt) return;
-          const d = Math.sqrt((mx - pt.x) ** 2 + (my - pt.y) ** 2);
-          if (d < bestDist) { bestDist = d; best = { segIdx: i, pointKey: key }; }
-        };
-        if (cfg.type === 'bezier') {
-          if (i === 0) checkPt(cfg.start, 'start');
-          checkPt(cfg.cp1, 'cp1');
-          checkPt(cfg.cp2, 'cp2');
-          checkPt(cfg.end, 'end');
-        } else {
-          checkPt(cfg.end, 'end');
-        }
-      });
-      if (best) {
-        dragTarget = best;
-        return; // don't pan
-      }
-    }
-    // Otherwise: pan (cancel any zoom lerp)
-    cancelZoomLerp();
-    isPanning = true;
-    panStartX = e.clientX - panX;
-    panStartY = e.clientY - panY;
-    canvas.style.cursor = 'grabbing';
-  });
-  window.addEventListener('mousemove', e => {
-    if (dragTarget) {
-      // Drag control point
-      const rect = canvas.getBoundingClientRect();
-      const mx = (e.clientX - rect.left - panX) / zoom;
-      const my = (e.clientY - rect.top - panY) / zoom;
-      const cfg = segmentConfigs[dragTarget.segIdx];
-      const key = dragTarget.pointKey;
-      if (cfg[key]) {
-        cfg[key].x = mx;
-        cfg[key].y = my;
-      }
-      rebuildPathFromConfigs();
-      renderDebugUI();
-    } else if (isPanning) {
-      panX = e.clientX - panStartX;
-      panY = e.clientY - panStartY;
-      clampPan();
-    } else {
-      // Ghost marker hover detection (desktop only)
-      const scr = _clientToCanvas(e.clientX, e.clientY);
-      const hit = _hitTestGhostMarkers(scr.x, scr.y);
-      if (hit !== _ghostHover) {
-        _ghostHover = hit;
-        canvas.style.cursor = hit ? 'pointer' : 'default';
-      }
-    }
-  });
-  window.addEventListener('mouseup', () => {
-    isPanning = false;
-    dragTarget = null;
-    canvas.style.cursor = _ghostHover ? 'pointer' : 'default';
-  });
-  canvas.addEventListener('wheel', e => {
-    e.preventDefault();
-    cancelZoomLerp();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = Math.max(0.5, Math.min(3, zoom * delta));
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    panX = mx - (mx - panX) * (newZoom / zoom);
-    panY = my - (my - panY) * (newZoom / zoom);
-    zoom = newZoom;
-    clampPan();
-  }, { passive: false });
-
-  // --- Touch support for mobile ---
-  let touchStartDist = 0;
-  let touchStartZoom = 1;
-  let touchStartPanX = 0, touchStartPanY = 0;
-  let touchStartMidX = 0, touchStartMidY = 0;
-  let _touchGhostHit = null;
-  let _touchStartPos = null;
-  const TAP_THRESHOLD = 10;
-
-  canvas.addEventListener('touchstart', e => {
-    e.preventDefault();
-    cancelZoomLerp();
-    if (e.touches.length === 1) {
-      const scr = _clientToCanvas(e.touches[0].clientX, e.touches[0].clientY);
-      _touchGhostHit = _hitTestGhostMarkers(scr.x, scr.y);
-      _touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      isPanning = true;
-      panStartX = e.touches[0].clientX - panX;
-      panStartY = e.touches[0].clientY - panY;
-    } else if (e.touches.length === 2) {
-      _touchGhostHit = null;
-      isPanning = false;
-      const dx = e.touches[1].clientX - e.touches[0].clientX;
-      const dy = e.touches[1].clientY - e.touches[0].clientY;
-      touchStartDist = Math.sqrt(dx * dx + dy * dy);
-      touchStartZoom = zoom;
-      touchStartPanX = panX;
-      touchStartPanY = panY;
-      touchStartMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      touchStartMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-    }
-  }, { passive: false });
-
-  canvas.addEventListener('touchmove', e => {
-    e.preventDefault();
-    if (_touchGhostHit && e.touches.length === 1 && _touchStartPos) {
-      const dx = e.touches[0].clientX - _touchStartPos.x;
-      const dy = e.touches[0].clientY - _touchStartPos.y;
-      if (Math.sqrt(dx * dx + dy * dy) > TAP_THRESHOLD) _touchGhostHit = null;
-    }
-    if (e.touches.length === 1 && isPanning) {
-      panX = e.touches[0].clientX - panStartX;
-      panY = e.touches[0].clientY - panStartY;
-      clampPan();
-    } else if (e.touches.length === 2 && touchStartDist > 0) {
-      const dx = e.touches[1].clientX - e.touches[0].clientX;
-      const dy = e.touches[1].clientY - e.touches[0].clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const scale = dist / touchStartDist;
-      const newZoom = Math.max(0.5, Math.min(3, touchStartZoom * scale));
-      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      const rect = canvas.getBoundingClientRect();
-      const mx = touchStartMidX - rect.left;
-      const my = touchStartMidY - rect.top;
-      panX = mx - (mx - touchStartPanX) * (newZoom / touchStartZoom) + (midX - touchStartMidX);
-      panY = my - (my - touchStartPanY) * (newZoom / touchStartZoom) + (midY - touchStartMidY);
-      zoom = newZoom;
-      clampPan();
-    }
-  }, { passive: false });
-
-  canvas.addEventListener('touchend', e => {
-    if (_touchGhostHit) {
-      _handleGhostMarkerClick(_touchGhostHit);
-      _touchGhostHit = null;
-      _touchStartPos = null;
-      isPanning = false;
-      touchStartDist = 0;
-      return;
-    }
-    _touchGhostHit = null;
-    _touchStartPos = null;
-    isPanning = false;
-    touchStartDist = 0;
-  }, { passive: false });
-}
-
-function applyPanZoom() {
-  ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, panX * dpr, panY * dpr);
-}
-
-function clampPan() {
-  // Clamp based on center of viewport — limit how far the view center can drift from scene center
-  const sceneCx = canvasW / 2;
-  const sceneCy = canvasH / 2;
-  // Viewport center in world coordinates
-  const viewCx = (canvasW / 2 - panX) / zoom;
-  const viewCy = (canvasH / 2 - panY) / zoom;
-  // Max distance the view center can be from the scene center
-  const maxDist = canvasH * 0.48;
-  const dx = viewCx - sceneCx;
-  const dy = viewCy - sceneCy;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist > maxDist) {
-    const scale = maxDist / dist;
-    const clampedCx = sceneCx + dx * scale;
-    const clampedCy = sceneCy + dy * scale;
-    panX = canvasW / 2 - clampedCx * zoom;
-    panY = canvasH / 2 - clampedCy * zoom;
-  }
-}
-
-/* ============================================================
-   DEBUG PATH EDITOR
-   ============================================================ */
-let debugEditorOpen = false;
-let dragTarget = null; // { segIdx, pointKey }
-let segmentConfigs = []; // array of 11 segment configs
-
-function getStageColor(idx) {
-  const liveIdx = STAGES.findIndex(s => s.id === liveStageId);
-  if (idx < liveIdx) return '#bb86fc';
-  if (idx === liveIdx) return '#39ff14';
-  if (idx === liveIdx + 1) return '#ff9800';
-  return '#007fff';
-}
-
-let debugHighlightPath = false;
-let debugShowHourMarks = false;
-let debugShowTimeTicks = false;
-
-// Authored at this canvas size — all coordinates are scaled proportionally to current canvas
-const AUTHORED_W = 1252;
-const AUTHORED_H = 1568;
-const AUTHORED_SEGMENTS = [
-  {"type":"bezier","start":{"x":626.89,"y":112.16},"cp1":{"x":562.24,"y":79.40},"cp2":{"x":489.38,"y":152.99},"end":{"x":472.42,"y":186.12}},
-  {"type":"bezier","start":{"x":472.42,"y":186.12},"cp1":{"x":444.48,"y":240.70},"cp2":{"x":441.09,"y":293.92},"end":{"x":465.83,"y":394.37}},
-  {"type":"bezier","start":{"x":465.83,"y":394.37},"cp1":{"x":495.33,"y":514.17},"cp2":{"x":556.03,"y":568.36},"end":{"x":629.13,"y":566.26}},
-  {"type":"bezier","start":{"x":629.13,"y":566.26},"cp1":{"x":949.47,"y":433.22},"cp2":{"x":787.15,"y":-74.45},"end":{"x":454.11,"y":157.23}},
-  {"type":"bezier","start":{"x":454.11,"y":157.23},"cp1":{"x":362.27,"y":222.96},"cp2":{"x":366.91,"y":393.37},"end":{"x":413.42,"y":499.91}},
-  {"type":"bezier","start":{"x":413.42,"y":499.91},"cp1":{"x":457.98,"y":601.98},"cp2":{"x":628.29,"y":919.62},"end":{"x":696.56,"y":1218.22}},
-  {"type":"bezier","start":{"x":696.56,"y":1218.22},"cp1":{"x":735.47,"y":1388.46},"cp2":{"x":516.78,"y":1392.18},"end":{"x":551.38,"y":1222.36}},
-  {"type":"bezier","start":{"x":551.38,"y":1222.36},"cp1":{"x":613.38,"y":918.08},"cp2":{"x":800.80,"y":589.97},"end":{"x":834.38,"y":455.40}},
-  {"type":"bezier","start":{"x":834.38,"y":455.40},"cp1":{"x":867.12,"y":325.64},"cp2":{"x":869.50,"y":258.76},"end":{"x":830.08,"y":190.40}},
-  {"type":"bezier","start":{"x":830.08,"y":190.40},"cp1":{"x":794.26,"y":138.74},"cp2":{"x":772.08,"y":135.11},"end":{"x":750.06,"y":123.98}},
-  {"type":"bezier","start":{"x":750.06,"y":123.98},"cp1":{"x":725.64,"y":111.64},"cp2":{"x":706.33,"y":122.35},"end":{"x":686.51,"y":128.21}}
-];
-
-function scalePoint(pt, sx, sy) {
-  return { x: pt.x * sx, y: pt.y * sy };
-}
-
-function initSegmentConfigs() {
-  // Scale authored coordinates to current canvas size
-  const sx = canvasW / AUTHORED_W;
-  const sy = canvasH / AUTHORED_H;
-
-  segmentConfigs = AUTHORED_SEGMENTS.map(cfg => {
-    const c = JSON.parse(JSON.stringify(cfg));
-    if (c.start) c.start = scalePoint(c.start, sx, sy);
-    if (c.end) c.end = scalePoint(c.end, sx, sy);
-    if (c.cp1) c.cp1 = scalePoint(c.cp1, sx, sy);
-    if (c.cp2) c.cp2 = scalePoint(c.cp2, sx, sy);
-    if (c.centerX != null) c.centerX *= sx;
-    if (c.centerY != null) c.centerY *= sy;
-    if (c.radius != null) c.radius *= Math.min(sx, sy);
-    return c;
-  });
-  rebuildPathFromConfigs();
-  return;
-
-  // --- Original procedural generation below (kept as reference) ---
-  const layout = getUnifiedLayout();
-  const cx = layout.earthCx;
-  const ey = layout.earthCy;
-  const er = layout.earthR;
-  const my = layout.moonCy;
-  const mr = layout.moonR;
-
-  // Default: each stage gets a cubic bezier. Initialize from rough positions.
-  // Stage segments spread from Earth lobe through Moon loop and back.
-  const defaults = [
-    // Launch: arc near Earth surface
-    { type: 'arc-earth', startAngle: 0.35, endAngle: 1.5, radius: er * 1.08 },
-    // ICPS Burns: wider Earth arc
-    { type: 'arc-earth', startAngle: 1.5, endAngle: 3.0, radius: er * 1.5 },
-    // Prox Ops: continue Earth arc
-    { type: 'arc-earth', startAngle: 3.0, endAngle: 4.5, radius: er * 1.5 },
-    // HEO Checkouts: finish Earth arc toward departure
-    { type: 'arc-earth', startAngle: 4.5, endAngle: 6.0, radius: er * 1.5 },
-    // TLI: bezier departing Earth heading toward Moon
-    { type: 'bezier', end: { x: cx - canvasW * 0.03, y: ey + (my - ey) * 0.2 } },
-    // Outbound Coast: bezier heading down-left toward Moon
-    { type: 'bezier', end: { x: cx - canvasW * 0.04, y: ey + (my - ey) * 0.65 } },
-    // Lunar Flyby: arc around Moon
-    { type: 'arc-moon', startAngle: Math.PI + 0.5, endAngle: -0.5, radius: mr * 4.5 },
-    // Return Coast: bezier heading up-right from Moon
-    { type: 'bezier', end: { x: cx + canvasW * 0.04, y: ey + (my - ey) * 0.35 } },
-    // CM/SM Sep: bezier approaching Earth
-    { type: 'bezier', end: { x: cx + canvasW * 0.02, y: ey + (my - ey) * 0.1 } },
-    // Reentry: bezier into Earth
-    { type: 'bezier', end: { x: cx + er * 0.8, y: ey + er * 0.5 } },
-    // Splashdown: short bezier to surface
-    { type: 'bezier', end: { x: cx + er * 0.3, y: ey + er * 0.6 } }
-  ];
-
-  segmentConfigs = [];
-  for (let i = 0; i < STAGES.length; i++) {
-    const d = defaults[i];
-    const prevEnd = i > 0 ? segmentConfigs[i - 1].end : { x: cx + er * 0.7, y: ey + er * 0.5 };
-
-    if (d.type.startsWith('arc')) {
-      const isEarth = d.type === 'arc-earth';
-      const acx = cx;
-      const acy = isEarth ? ey : my;
-      const r = d.radius;
-      const startPt = { x: acx + r * Math.cos(d.startAngle), y: acy + r * Math.sin(d.startAngle) };
-      const endPt = { x: acx + r * Math.cos(d.endAngle), y: acy + r * Math.sin(d.endAngle) };
-      segmentConfigs.push({
-        type: d.type,
-        start: i === 0 ? startPt : { ...prevEnd },
-        end: endPt,
-        startAngle: d.startAngle,
-        endAngle: d.endAngle,
-        radius: r,
-        centerX: acx,
-        centerY: acy
-      });
-    } else {
-      const start = { ...prevEnd };
-      const end = { ...d.end };
-      const cp1 = { x: start.x + (end.x - start.x) * 0.33, y: start.y + (end.y - start.y) * 0.33 };
-      const cp2 = { x: start.x + (end.x - start.x) * 0.66, y: start.y + (end.y - start.y) * 0.66 };
-      segmentConfigs.push({ type: 'bezier', start, cp1, cp2, end });
-    }
-  }
-}
-
-function sampleSegment(cfg, steps) {
-  const pts = [];
-  if (cfg.type === 'bezier') {
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const mt = 1 - t;
-      pts.push({
-        x: mt*mt*mt*cfg.start.x + 3*mt*mt*t*cfg.cp1.x + 3*mt*t*t*cfg.cp2.x + t*t*t*cfg.end.x,
-        y: mt*mt*mt*cfg.start.y + 3*mt*mt*t*cfg.cp1.y + 3*mt*t*t*cfg.cp2.y + t*t*t*cfg.end.y
-      });
-    }
-  } else if (cfg.type === 'arc-earth' || cfg.type === 'arc-moon') {
-    for (let i = 0; i <= steps; i++) {
-      const angle = cfg.startAngle + (cfg.endAngle - cfg.startAngle) * (i / steps);
-      pts.push({
-        x: cfg.centerX + cfg.radius * Math.cos(angle),
-        y: cfg.centerY + cfg.radius * Math.sin(angle)
-      });
-    }
-  } else { // straight
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      pts.push({
-        x: cfg.start.x + (cfg.end.x - cfg.start.x) * t,
-        y: cfg.start.y + (cfg.end.y - cfg.start.y) * t
-      });
-    }
-  }
-  return pts;
-}
-
-function rebuildPathFromConfigs() {
-  // Auto-connect: enforce each start = previous end
-  for (let i = 1; i < segmentConfigs.length; i++) {
-    const prev = segmentConfigs[i - 1];
-    const curr = segmentConfigs[i];
-    if (curr.type.startsWith('arc')) {
-      // For arcs, update startAngle to match the previous end
-      curr.start = { ...prev.end };
-    } else {
-      curr.start = { ...prev.end };
-    }
-  }
-  // Invalidate path cache so it rebuilds
-  missionPathCache = null;
-}
-
-function toggleDebugPanel() {
-  debugEditorOpen = !debugEditorOpen;
-  document.getElementById('debugPanel').classList.toggle('open', debugEditorOpen);
-  if (debugEditorOpen) {
-    if (segmentConfigs.length === 0) initSegmentConfigs();
-    renderDebugUI();
-  }
-}
-
-function renderDebugUI() {
-  const body = document.getElementById('debugBody');
-  body.innerHTML = '';
-  segmentConfigs.forEach((cfg, i) => {
-    const stage = STAGES[i];
-    const color = getStageColor(i);
-    const div = document.createElement('div');
-    div.className = 'seg-editor';
-    div.style.borderLeftColor = color;
-    div.style.borderLeftWidth = '3px';
-
-    let fieldsHtml = '';
-    const isFirst = i === 0;
-
-    // Type selector
-    const typeOptions = ['bezier', 'arc-earth', 'arc-moon', 'straight'].map(t =>
-      `<option value="${t}" ${cfg.type === t ? 'selected' : ''}>${t}</option>`
-    ).join('');
-
-    if (cfg.type === 'bezier') {
-      fieldsHtml = `
-        <div class="seg-fields">
-          <div class="seg-field-group ${isFirst ? '' : 'locked'}"><label>Sx</label><input type="number" value="${Math.round(cfg.start.x)}" data-seg="${i}" data-key="start.x" ${isFirst ? '' : 'readonly'}></div>
-          <div class="seg-field-group ${isFirst ? '' : 'locked'}"><label>Sy</label><input type="number" value="${Math.round(cfg.start.y)}" data-seg="${i}" data-key="start.y" ${isFirst ? '' : 'readonly'}></div>
-          <div class="seg-field-group"><label>C1x</label><input type="number" value="${Math.round(cfg.cp1.x)}" data-seg="${i}" data-key="cp1.x"></div>
-          <div class="seg-field-group"><label>C1y</label><input type="number" value="${Math.round(cfg.cp1.y)}" data-seg="${i}" data-key="cp1.y"></div>
-          <div class="seg-field-group"><label>C2x</label><input type="number" value="${Math.round(cfg.cp2.x)}" data-seg="${i}" data-key="cp2.x"></div>
-          <div class="seg-field-group"><label>C2y</label><input type="number" value="${Math.round(cfg.cp2.y)}" data-seg="${i}" data-key="cp2.y"></div>
-          <div class="seg-field-group"><label>Ex</label><input type="number" value="${Math.round(cfg.end.x)}" data-seg="${i}" data-key="end.x"></div>
-          <div class="seg-field-group"><label>Ey</label><input type="number" value="${Math.round(cfg.end.y)}" data-seg="${i}" data-key="end.y"></div>
-        </div>`;
-    } else if (cfg.type.startsWith('arc')) {
-      fieldsHtml = `
-        <div class="seg-fields">
-          <div class="seg-field-group"><label>StartAngle</label><input type="number" step="0.1" value="${cfg.startAngle.toFixed(2)}" data-seg="${i}" data-key="startAngle"></div>
-          <div class="seg-field-group"><label>EndAngle</label><input type="number" step="0.1" value="${cfg.endAngle.toFixed(2)}" data-seg="${i}" data-key="endAngle"></div>
-          <div class="seg-field-group"><label>Radius</label><input type="number" value="${Math.round(cfg.radius)}" data-seg="${i}" data-key="radius"></div>
-        </div>`;
-    } else {
-      fieldsHtml = `
-        <div class="seg-fields">
-          <div class="seg-field-group locked"><label>Sx</label><input type="number" value="${Math.round(cfg.start.x)}" readonly></div>
-          <div class="seg-field-group locked"><label>Sy</label><input type="number" value="${Math.round(cfg.start.y)}" readonly></div>
-          <div class="seg-field-group"><label>Ex</label><input type="number" value="${Math.round(cfg.end.x)}" data-seg="${i}" data-key="end.x"></div>
-          <div class="seg-field-group"><label>Ey</label><input type="number" value="${Math.round(cfg.end.y)}" data-seg="${i}" data-key="end.y"></div>
-        </div>`;
-    }
-
-    div.innerHTML = `
-      <div class="seg-editor-title">
-        <span class="seg-color" style="background:${color}"></span>
-        <span>${stage.name}</span>
-        <select data-seg="${i}" data-key="type">${typeOptions}</select>
-      </div>
-      ${fieldsHtml}
-    `;
-    body.appendChild(div);
-  });
-
-  // Wire input events
-  body.querySelectorAll('input, select').forEach(el => {
-    el.addEventListener('change', handleDebugInput);
-    el.addEventListener('input', handleDebugInput);
-  });
-}
-
-function handleDebugInput(e) {
-  const seg = parseInt(e.target.dataset.seg);
-  const key = e.target.dataset.key;
-  if (isNaN(seg) || !key) return;
-
-  const val = e.target.type === 'select-one' ? e.target.value : parseFloat(e.target.value);
-  const cfg = segmentConfigs[seg];
-
-  if (key === 'type') {
-    // Type change — reinitialize segment
-    const oldEnd = cfg.end;
-    const start = cfg.start;
-    if (val === 'bezier') {
-      const cp1 = { x: start.x + (oldEnd.x - start.x) * 0.33, y: start.y + (oldEnd.y - start.y) * 0.33 };
-      const cp2 = { x: start.x + (oldEnd.x - start.x) * 0.66, y: start.y + (oldEnd.y - start.y) * 0.66 };
-      segmentConfigs[seg] = { type: 'bezier', start, cp1, cp2, end: oldEnd };
-    } else if (val === 'arc-earth' || val === 'arc-moon') {
-      const layout = getUnifiedLayout();
-      const acx = val === 'arc-earth' ? layout.earthCx : layout.moonCx;
-      const acy = val === 'arc-earth' ? layout.earthCy : layout.moonCy;
-      const r = val === 'arc-earth' ? layout.earthR * 1.5 : layout.moonR * 4.5;
-      segmentConfigs[seg] = { type: val, start, end: oldEnd, startAngle: 0, endAngle: Math.PI, radius: r, centerX: acx, centerY: acy };
-    } else {
-      segmentConfigs[seg] = { type: 'straight', start, end: oldEnd };
-    }
-    rebuildPathFromConfigs();
-    renderDebugUI();
-    return;
-  }
-
-  // Set nested property
-  const keys = key.split('.');
-  if (keys.length === 2) {
-    if (!cfg[keys[0]]) cfg[keys[0]] = {};
-    cfg[keys[0]][keys[1]] = val;
-  } else {
-    cfg[key] = val;
-  }
-
-  // For arcs, recompute end point from angle
-  if (cfg.type.startsWith('arc') && (key === 'startAngle' || key === 'endAngle' || key === 'radius')) {
-    cfg.start = { x: cfg.centerX + cfg.radius * Math.cos(cfg.startAngle), y: cfg.centerY + cfg.radius * Math.sin(cfg.startAngle) };
-    cfg.end = { x: cfg.centerX + cfg.radius * Math.cos(cfg.endAngle), y: cfg.centerY + cfg.radius * Math.sin(cfg.endAngle) };
-  }
-
-  rebuildPathFromConfigs();
-}
-
-// Smooth bezier: make the control handles at a joint between two segments collinear
-// so the transition is smooth (C1 continuity). Works on the currently dragged point or
-// searches for the nearest joint to the last dragged point.
-function smoothSelectedJoint() {
-  if (segmentConfigs.length < 2) return;
-
-  // Find joints: each segment i's end connects to segment i+1's start
-  // Smooth by making segment[i].cp2 and segment[i+1].cp1 collinear through the joint point
-  for (let i = 0; i < segmentConfigs.length - 1; i++) {
-    const curr = segmentConfigs[i];
-    const next = segmentConfigs[i + 1];
-    if (curr.type !== 'bezier' || next.type !== 'bezier') continue;
-
-    const joint = curr.end; // = next.start (same point due to auto-connect)
-
-    // Direction from cp2 to joint
-    const dx1 = joint.x - curr.cp2.x;
-    const dy1 = joint.y - curr.cp2.y;
-    const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-
-    // Distance from joint to cp1 of next segment
-    const dx2 = next.cp1.x - joint.x;
-    const dy2 = next.cp1.y - joint.y;
-    const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-
-    if (len1 < 0.1) continue;
-
-    // Make next.cp1 collinear: same direction as joint-from-cp2, at its current distance
-    const dirX = dx1 / len1;
-    const dirY = dy1 / len1;
-    next.cp1.x = joint.x + dirX * len2;
-    next.cp1.y = joint.y + dirY * len2;
-  }
-
-  rebuildPathFromConfigs();
-  renderDebugUI();
-}
-
-function copySegmentConfig() {
-  const json = JSON.stringify(segmentConfigs, null, 2);
-  navigator.clipboard.writeText(json).then(() => {
-    alert('Segment config copied to clipboard!');
-  }).catch(() => {
-    // Fallback: log to console
-    console.log('=== SEGMENT CONFIG ===');
-    console.log(json);
-    alert('Config logged to console (clipboard not available)');
-  });
-}
-
-// Draw editor handles on canvas
-function drawDebugHourMarks(path) {
-  if (!debugShowHourMarks || !debugEditorOpen) return;
-  ctx.save();
-  ctx.font = `bold 10px ${getComputedStyle(document.documentElement).getPropertyValue('--font-mono')}`;
-  ctx.textAlign = 'center';
-  // Draw marks at every 1 hour for the first 24 hours
-  for (let h = 0; h <= 24; h++) {
-    const metSec = h * 3600;
-    const u = metToU(metSec);
-    const pt = path.getPoint(u);
-    // Dot
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff4444';
-    ctx.fill();
-    // Label
-    ctx.fillStyle = '#ff8888';
-    ctx.fillText(`T+${h}h`, pt.x, pt.y - 8);
-  }
-  ctx.restore();
-}
-
-function drawDebugHandles() {
-  if (!debugEditorOpen) return;
-
-  // Highlight: draw each segment in a distinct bright color
-  if (debugHighlightPath) {
-    const highlightColors = ['#ff4444','#ff8800','#ffdd00','#44ff44','#00ddff','#4488ff','#aa44ff','#ff44aa','#ff6644','#88ff44','#44ffaa'];
-    segmentConfigs.forEach((cfg, i) => {
-      const pts = sampleSegment(cfg, 50);
-      if (pts.length < 2) return;
-      ctx.save();
-      ctx.strokeStyle = highlightColors[i % highlightColors.length];
-      ctx.lineWidth = 3;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
-      ctx.stroke();
-      // Label the segment number
-      const mid = pts[Math.floor(pts.length / 2)];
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillStyle = highlightColors[i % highlightColors.length];
-      ctx.textAlign = 'center';
-      ctx.fillText(`${i + 1}: ${STAGES[i].name}`, mid.x, mid.y - 10);
-      ctx.restore();
-    });
-  }
-
-  segmentConfigs.forEach((cfg, i) => {
-    const color = getStageColor(i);
-
-    if (cfg.type === 'bezier') {
-      // Draw handle arms
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(cfg.start.x, cfg.start.y);
-      ctx.lineTo(cfg.cp1.x, cfg.cp1.y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cfg.end.x, cfg.end.y);
-      ctx.lineTo(cfg.cp2.x, cfg.cp2.y);
-      ctx.stroke();
-      ctx.restore();
-
-      // Draw points
-      [['start', cfg.start], ['cp1', cfg.cp1], ['cp2', cfg.cp2], ['end', cfg.end]].forEach(([key, pt]) => {
-        const isCtrl = key === 'cp1' || key === 'cp2';
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, isCtrl ? 4 : 5, 0, Math.PI * 2);
-        ctx.fillStyle = isCtrl ? 'rgba(255,255,255,0.4)' : color;
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      });
-    } else {
-      // Just draw start and end dots
-      [cfg.start, cfg.end].forEach(pt => {
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      });
-    }
-  });
-}
-
-// (Debug drag handling is merged into setupPanZoom above)
-
-
-/* ============================================================
    TIME CONVERSION MODAL
    ============================================================ */
 function metToLocalTimeStr(metSeconds) {
@@ -3840,8 +2353,8 @@ function openTimeModal(metSeconds, stageState, activityText) {
   // Local time
   document.getElementById('timeModalLocal').textContent = metToLocalTimeStr(metSeconds);
 
-  // Mission time section — conditional based on past/future and toggle mode
-  const now = getEffectiveNow();
+  // Mission time section — always use real time for past/future determination
+  const now = Date.now();
   const missionElapsed = (now - T0.getTime()) / 1000;
   const isFuture = missionElapsed < metSeconds;
   const metEl = document.getElementById('timeModalMet');
@@ -3877,7 +2390,8 @@ function closeAboutModal() {
    ============================================================ */
 function renderActivities(activities, stageState) {
   if (!activities || activities.length === 0) return '<p>No activities listed.</p>';
-  const now = getEffectiveNow();
+  // Always use real time — show actual completion/countdown state regardless of scrubber
+  const now = Date.now();
   const missionElapsed = (now - T0.getTime()) / 1000;
 
   const stageColorClass = stageState === 'current' ? 'stage-current' : stageState === 'past' ? 'stage-past' : 'stage-future';
@@ -3892,7 +2406,7 @@ function renderActivities(activities, stageState) {
       const canceledPast = isPast ? ' past-activity' : '';
       const result = formatTimeByMode(a.met, 'plus');
       const timeHtml = ` <span class="activity-time" onclick="openTimeModal(${a.met}, '${stageState}', '${safeText}')">${result.text}</span>`;
-      return `<li class="todo-item canceled-activity${canceledPast}"><span class="todo-checkbox" onclick="zoomToMet(${a.met})" style="cursor:pointer">&#10005;</span><span class="todo-text">${a.text}${timeHtml}</span></li>`;
+      return `<li class="todo-item canceled-activity${canceledPast}"><span class="todo-checkbox" style="cursor:default">&#10005;</span><span class="todo-text">${a.text}${timeHtml}</span></li>`;
     }
 
     const cls = isPast ? 'past-activity' : 'future-activity';
@@ -3907,7 +2421,7 @@ function renderActivities(activities, stageState) {
       const inPrefix = timeDisplayMode === 'realtime' ? '<span class="time-unit">in</span> ' : '';
       timeHtml = ` <span class="activity-time activity-countdown" data-met="${a.met}" onclick="openTimeModal(${a.met}, '${stageState}', '${safeText}')">${inPrefix}${result.text}</span>`;
     }
-    return `<li class="todo-item ${cls}"><span class="todo-checkbox" onclick="zoomToMet(${a.met})" style="cursor:pointer">${checkmark}</span><span class="todo-text">${a.text}${timeHtml}</span></li>`;
+    return `<li class="todo-item ${cls}"><span class="todo-checkbox" data-met="${a.met}" style="cursor:pointer" onclick="onTodoCheckboxClick(this, ${a.met})">${checkmark}</span><span class="todo-text">${a.text}${timeHtml}</span></li>`;
   }).join('') + '</ul>';
 }
 
@@ -3926,7 +2440,8 @@ function formatCountdown(seconds) {
 function updateActivityCountdowns() {
   const countdowns = document.querySelectorAll('.activity-countdown');
   if (countdowns.length === 0) return;
-  const now = getEffectiveNow();
+  // Always use real time — show actual countdowns regardless of scrubber position
+  const now = Date.now();
   const missionElapsed = (now - T0.getTime()) / 1000;
   countdowns.forEach(el => {
     const metVal = parseFloat(el.dataset.met);
@@ -3949,238 +2464,78 @@ function updateActivityCountdowns() {
   });
 }
 
-/* ============================================================
-   ZOOM-TO-SEGMENT ON TAB SELECT
-   ============================================================ */
-let zoomLerp = null; // { startPanX, startPanY, startZoom, targetPanX, targetPanY, targetZoom, startTime, duration }
-// --- Shared flash animation system ---
-// Each flash: { shape: 'tick'|'circle', startTime, duration, ...shapeData }
-// tick shapeData: { metSeconds }
-// circle shapeData: { x, y, radius }
-let _activeFlashes = [];
 
-function triggerFlash(flash) {
-  flash.startTime = performance.now();
-  flash.duration = flash.duration || 1000;
-  _activeFlashes.push(flash);
+function initScrubber() {
+  const scrubber = document.getElementById('missionScrubber');
+  // Set range: 0 to MET_MISSION_END in seconds, step = 60s for smooth scrubbing
+  scrubber.min = 0;
+  scrubber.max = MET_MISSION_END;
+  scrubber.step = 60;
+
+  // Set initial position to current real MET
+  const realMET = (Date.now() - T0.getTime()) / 1000;
+  scrubber.value = Math.max(0, Math.min(MET_MISSION_END, realMET));
+
+  scrubber.addEventListener('input', () => {
+    const metSec = parseFloat(scrubber.value);
+    scrubberOverrideMs = T0.getTime() + metSec * 1000;
+
+    // Immediately update everything
+    computeLiveStage();
+    updateTimer();
+    updateActivityCountdowns();
+    updateSceneMET();
+
+    // Derive and select the stage that contains this MET (don't re-jump timeline)
+    const derivedStageId = getStageForMET(metSec);
+    selectedStageId = null; // force re-render even if same stage
+    selectStage(derivedStageId, false);
+  });
 }
 
-function drawFlashes(path) {
-  const now = performance.now();
-  _activeFlashes = _activeFlashes.filter(f => now - f.startTime < f.duration);
+function initTrackButtons() {
+  document.querySelectorAll('.track-btn[data-track]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.track;
+      const isActive = btn.classList.contains('active');
+      // Clear active from all track buttons (not DEBUG)
+      document.querySelectorAll('.track-btn[data-track]').forEach(b => b.classList.remove('active'));
 
-  for (const f of _activeFlashes) {
-    const progress = (now - f.startTime) / f.duration;
-    const opacity = 0.8 * (1 - progress);
-
-    ctx.save();
-    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-    ctx.lineWidth = 2;
-
-    if (f.shape === 'tick') {
-      const u = metToU(f.metSeconds);
-      const pos = path.getTickPosition(u);
-      if (pos) {
-        const len = 7;
-        ctx.beginPath();
-        ctx.moveTo(pos.x - len * Math.cos(pos.angle), pos.y - len * Math.sin(pos.angle));
-        ctx.lineTo(pos.x + len * Math.cos(pos.angle), pos.y + len * Math.sin(pos.angle));
-        ctx.stroke();
+      if (target === 'free' || isActive) {
+        // FREE FLOAT or toggle off: clear tracking
+        if (window._artemisScene) window._artemisScene.setTrackTarget(null);
+        if (target === 'free' && !isActive) btn.classList.add('active');
+      } else {
+        btn.classList.add('active');
+        if (window._artemisScene) window._artemisScene.setTrackTarget(target);
       }
-    } else if (f.shape === 'circle') {
-      ctx.beginPath();
-      ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+    });
+  });
 
-    ctx.restore();
-  }
-}
-
-function zoomToSegment(stageId) {
-  const idx = STAGES.findIndex(s => s.id === stageId);
-  if (idx < 0 || segmentConfigs.length === 0) return;
-
-  const cfg = segmentConfigs[idx];
-  if (!cfg) return;
-
-  // Sample the segment and find its bounding box
-  const pts = sampleSegment(cfg, 30);
-  if (pts.length === 0) return;
-
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const p of pts) {
-    if (p.x < minX) minX = p.x;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.y > maxY) maxY = p.y;
-  }
-
-  // Add padding
-  const pad = 60;
-  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
-
-  const segW = maxX - minX;
-  const segH = maxY - minY;
-  const segCx = (minX + maxX) / 2;
-  const segCy = (minY + maxY) / 2;
-
-  // Compute target zoom to fit the segment in the upper portion of the viewport
-  const targetZoom = Math.min(
-    canvasW / segW,
-    (canvasH * 0.66) / segH,
-    3 // max zoom cap
-  );
-  const clampedZoom = Math.max(0.5, targetZoom);
-
-  // Compute target pan — center horizontally, bias vertically to 20% from top
-  const targetPanX = canvasW / 2 - segCx * clampedZoom;
-  const targetPanY = canvasH * 0.33 - segCy * clampedZoom;
-
-  // Start lerp animation
-  zoomLerp = {
-    startPanX: panX,
-    startPanY: panY,
-    startZoom: zoom,
-    targetPanX,
-    targetPanY,
-    targetZoom: clampedZoom,
-    startTime: performance.now(),
-    duration: 500
-  };
-}
-
-function updateZoomLerp() {
-  if (!zoomLerp) return;
-  const elapsed = performance.now() - zoomLerp.startTime;
-  const t = Math.min(1, elapsed / zoomLerp.duration);
-  // Ease out cubic
-  const e = 1 - Math.pow(1 - t, 3);
-
-  panX = zoomLerp.startPanX + (zoomLerp.targetPanX - zoomLerp.startPanX) * e;
-  panY = zoomLerp.startPanY + (zoomLerp.targetPanY - zoomLerp.startPanY) * e;
-  zoom = zoomLerp.startZoom + (zoomLerp.targetZoom - zoomLerp.startZoom) * e;
-
-  if (t >= 1) zoomLerp = null;
-}
-
-function cancelZoomLerp() {
-  zoomLerp = null;
-  introLerp = null; // also cancel intro animation
-}
-
-/* ============================================================
-   INTRO LERP — zoomed-out Earth → LIVE stage over 5 seconds
-   ============================================================ */
-let introLerp = null; // { startPanX, startPanY, startZoom, targetPanX, targetPanY, targetZoom, startTime, duration }
-
-function startIntroLerp() {
-  // Compute the "zoomed out on Moon" starting view
-  const layout = getUnifiedLayout();
-  const startZoom = 0.7;
-  const startPanX = canvasW / 2 - layout.moonCx * startZoom;
-  const startPanY = canvasH / 2 - layout.moonCy * startZoom;
-
-  // Set the initial view immediately
-  panX = startPanX;
-  panY = startPanY;
-  zoom = startZoom;
-
-  // Compute the LIVE stage target (same logic as zoomToSegment)
-  const idx = STAGES.findIndex(s => s.id === liveStageId);
-  if (idx < 0 || segmentConfigs.length === 0) return;
-  const cfg = segmentConfigs[idx];
-  if (!cfg) return;
-
-  const pts = sampleSegment(cfg, 30);
-  if (pts.length === 0) return;
-
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const p of pts) {
-    if (p.x < minX) minX = p.x;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.y > maxY) maxY = p.y;
-  }
-  const pad = 60;
-  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
-
-  const segW = maxX - minX;
-  const segH = maxY - minY;
-  const targetZoom = Math.max(0.5, Math.min(3, Math.min(canvasW / segW, (canvasH * 0.66) / segH)));
-  const segCx = (minX + maxX) / 2;
-  const segCy = (minY + maxY) / 2;
-  const targetPanX = canvasW / 2 - segCx * targetZoom;
-  const targetPanY = canvasH * 0.33 - segCy * targetZoom;
-
-  introLerp = {
-    startPanX, startPanY, startZoom,
-    targetPanX, targetPanY, targetZoom,
-    startTime: performance.now(),
-    duration: 3000
-  };
-}
-
-function updateIntroLerp() {
-  if (!introLerp) return;
-  const elapsed = performance.now() - introLerp.startTime;
-  const t = Math.min(1, elapsed / introLerp.duration);
-  // Ease out cubic
-  const e = 1 - Math.pow(1 - t, 3);
-
-  panX = introLerp.startPanX + (introLerp.targetPanX - introLerp.startPanX) * e;
-  panY = introLerp.startPanY + (introLerp.targetPanY - introLerp.startPanY) * e;
-  zoom = introLerp.startZoom + (introLerp.targetZoom - introLerp.startZoom) * e;
-
-  if (t >= 1) introLerp = null;
-}
-
-function zoomToMet(metSeconds) {
-  const path = getMissionPath();
-  if (!path) return;
-  const u = metToU(metSeconds);
-  const pt = path.getPoint(u);
-  if (!pt) return;
-
-  const targetZoom = 1.5;
-  const targetPanX = canvasW / 2 - pt.x * targetZoom;
-  const targetPanY = canvasH / 2 - pt.y * targetZoom;
-
-  zoomLerp = {
-    startPanX: panX,
-    startPanY: panY,
-    startZoom: zoom,
-    targetPanX,
-    targetPanY,
-    targetZoom,
-    startTime: performance.now(),
-    duration: 500
-  };
-
-  // Trigger flash tick at the target position
-  triggerFlash({ shape: 'tick', metSeconds, duration: 1000 });
+  // DEBUG toggle
+  const debugBtn = document.getElementById('debugToggleBtn');
+  debugBtn.addEventListener('click', () => {
+    debugBtn.classList.toggle('active');
+    const isOn = debugBtn.classList.contains('active');
+    if (window._artemisScene) window._artemisScene.setDebugVisible(isOn);
+  });
 }
 
 function init() {
-  // Initialize canvas sizing + observer
-  resizeCanvas();
-  new ResizeObserver(() => resizeCanvas()).observe(canvas.parentElement);
+  // Show track/debug buttons only when ?debug=true is in the URL
+  if (new URLSearchParams(window.location.search).get('debug') === 'true') {
+    const trackBtns = document.querySelector('.track-buttons');
+    if (trackBtns) trackBtns.classList.add('debug-visible');
+  }
 
-  initSegmentConfigs();  // Load authored path positions
   buildTabs();
   initInfoTabs();
   initChipNav();
   setupArrows();
-  setupPanZoom();
+  initScrubber();
+  initTrackButtons();
   computeLiveStage();
-  selectStage(liveStageId);
-  _initialLoadComplete = true; // after this, tab clicks will zoom to segments
-
-  // Start intro lerp: zoomed-out Earth → LIVE stage
-  startIntroLerp();
-
-  // Start the visualization animation loop
-  startRenderLoop();
+  selectStage(liveStageId, false);
 
   // Auto-scroll strip after a brief delay so DOM is ready
   requestAnimationFrame(() => {
@@ -4189,15 +2544,80 @@ function init() {
     });
   });
 
-  // Tick every second
+  // Tick every second: update live stage, timer, and countdowns
   setInterval(() => {
     computeLiveStage();
     updateTimer();
     updateActivityCountdowns();
+    // Update Three.js scene with current MET
+    updateSceneMET();
+
+    // In real-time mode: auto-advance scrubber + selected stage
+    if (scrubberOverrideMs == null) {
+      const realMET = (Date.now() - T0.getTime()) / 1000;
+      const scrubber = document.getElementById('missionScrubber');
+      if (scrubber) scrubber.value = Math.max(0, Math.min(MET_MISSION_END, realMET));
+
+      if (liveStageId !== selectedStageId) {
+        selectStage(liveStageId, false);
+      }
+    }
+
+    // Keep TODAY button state current
+    updateChipArrows();
   }, 1000);
 }
 
+// --- Three.js scene integration ---
+function updateSceneMET() {
+  const now = getEffectiveNow();
+  const metSec = (now - T0.getTime()) / 1000;
+  if (window._artemisScene) {
+    // Snap Earth instantly when scrubbing, lerp in real-time mode
+    window._artemisScene.setMissionTime(metSec, scrubberOverrideMs != null);
+    // Update LIVE indicator visibility
+    window._artemisScene.setLiveMode(scrubberOverrideMs == null);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<!-- Three.js scene module (loaded after DOM, initializes into #vizContainer) -->
+<script type="module">
+import ArtemisScene from './scene.js';
+
+const container = document.getElementById('vizContainer');
+ArtemisScene.init(container);
+
+// Set initial mission time
+const T0 = new Date('2026-04-01T18:35:12-04:00');
+const metSec = (Date.now() - T0.getTime()) / 1000;
+ArtemisScene.setMissionTime(metSec);
+
+// Send stage data to the scene for tick marks
+// STAGES is defined in the main <script> block above
+ArtemisScene.createStageTicks(window.STAGES || []);
+
+// Create per-stage color-coded trajectory segments
+ArtemisScene.createStageTrajectorySegments(window.STAGES || []);
+
+// Create ghost circles at stage boundaries (clickable trajectory markers)
+ArtemisScene.createGhostCircles(window.STAGES || []);
+
+// Register ghost circle click callback — smooth lerp to that MET
+ArtemisScene.onGhostCircleClick((metSeconds) => {
+  // Determine which stage this MET belongs to and select it
+  const stageId = window.getStageForMET(metSeconds);
+  window.smoothLerpToMET(metSeconds, stageId);
+});
+
+// Expose for the UI tick loop
+window._artemisScene = ArtemisScene;
+
+// Orion is the default camera target — highlight the ORION track button
+const orionBtn = document.querySelector('.track-btn[data-track="orion"]');
+if (orionBtn) orionBtn.classList.add('active');
 </script>
 
 </body>
