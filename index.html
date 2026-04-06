@@ -1003,6 +1003,74 @@ html, body {
   font-style: italic;
 }
 
+/* --- MOONSET Debug Modal --- */
+.moonset-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.moonset-modal-overlay.open {
+  display: flex;
+}
+.moonset-modal {
+  background: #14141f;
+  border: 1px solid rgba(0,127,255,0.3);
+  border-radius: 12px;
+  padding: 20px 24px;
+  max-width: 380px;
+  width: 90%;
+  max-height: 80vh;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.moonset-modal h3 {
+  margin: 0 0 12px;
+  font-size: 1em;
+  color: var(--text-bright);
+}
+.moonset-modal .ms-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.75em;
+  color: rgba(200,200,208,0.8);
+}
+.moonset-modal .ms-row label {
+  flex: 0 0 120px;
+}
+.moonset-modal .ms-row input[type="range"] {
+  flex: 1;
+  margin: 0 8px;
+  height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+  outline: none;
+}
+.moonset-modal .ms-row .ms-val {
+  flex: 0 0 40px;
+  text-align: right;
+  font-family: monospace;
+}
+.moonset-modal textarea {
+  width: 100%;
+  height: 60px;
+  margin-top: 10px;
+  background: #0a0a14;
+  color: #39ff14;
+  border: 1px solid rgba(0,127,255,0.2);
+  border-radius: 6px;
+  padding: 6px;
+  font-family: monospace;
+  font-size: 0.7em;
+  resize: none;
+}
+
 /* Activity / todo list styles */
 .todo-list {
   list-style: none;
@@ -1227,6 +1295,7 @@ html, body {
             <button class="track-btn" data-track="lunar-orbit">LUNAR ORBIT</button>
             <button class="track-btn" data-track="free">FREE FLOAT</button>
             <button class="track-btn" id="debugToggleBtn">DEBUG</button>
+            <button class="track-btn" id="moonsetBtn" onclick="openMoonsetModal()">MOONSET</button>
           </div>
         </div>
         <div class="hud-chip hud-chip--timer">
@@ -1298,6 +1367,22 @@ html, body {
   </div>
 </div>
 
+<!-- MOONSET Debug Modal -->
+<div class="moonset-modal-overlay" id="moonsetModalOverlay" onclick="closeMoonsetModal()">
+  <div class="moonset-modal" onclick="event.stopPropagation()">
+    <h3>Moon Lighting Settings</h3>
+    <div class="ms-row"><label>Color (hex)</label><input type="text" id="ms-color" value="cccccc" style="flex:1;background:#0a0a14;color:#fff;border:1px solid rgba(0,127,255,0.2);border-radius:4px;padding:2px 6px;font-family:monospace;font-size:0.9em" oninput="onMoonsetChange()"><span class="ms-val"></span></div>
+    <div class="ms-row"><label>Emissive (hex)</label><input type="text" id="ms-emissive" value="111111" style="flex:1;background:#0a0a14;color:#fff;border:1px solid rgba(0,127,255,0.2);border-radius:4px;padding:2px 6px;font-family:monospace;font-size:0.9em" oninput="onMoonsetChange()"><span class="ms-val"></span></div>
+    <div class="ms-row"><label>Emissive Int.</label><input type="range" id="ms-emissiveInt" min="0" max="1" step="0.01" value="0.05" oninput="onMoonsetChange()"><span class="ms-val" id="ms-emissiveInt-val">0.05</span></div>
+    <div class="ms-row"><label>Shininess</label><input type="range" id="ms-shininess" min="0" max="100" step="1" value="5" oninput="onMoonsetChange()"><span class="ms-val" id="ms-shininess-val">5</span></div>
+    <div class="ms-row"><label>Dark Side</label><input type="range" id="ms-darkSide" min="0" max="0.5" step="0.01" value="0.03" oninput="onMoonsetChange()"><span class="ms-val" id="ms-darkSide-val">0.03</span></div>
+    <div class="ms-row"><label>Sun Intensity</label><input type="range" id="ms-sunInt" min="0" max="5" step="0.1" value="1.8" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunInt-val">1.8</span></div>
+    <div class="ms-row"><label>Sun Dir X</label><input type="range" id="ms-sunX" min="-1" max="1" step="0.05" value="1.0" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunX-val">1.0</span></div>
+    <div class="ms-row"><label>Sun Dir Y</label><input type="range" id="ms-sunY" min="-1" max="1" step="0.05" value="0.0" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunY-val">0.0</span></div>
+    <div class="ms-row"><label>Sun Dir Z</label><input type="range" id="ms-sunZ" min="-1" max="1" step="0.05" value="0.3" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunZ-val">0.3</span></div>
+    <textarea id="moonsetOutput" readonly onclick="this.select()"></textarea>
+  </div>
+</div>
 
 <script>
 /* ============================================================
@@ -2383,6 +2468,66 @@ function openAboutModal() {
 
 function closeAboutModal() {
   document.getElementById('aboutModalOverlay').classList.remove('open');
+}
+
+// --- MOONSET Debug Modal ---
+function openMoonsetModal() {
+  document.getElementById('moonsetModalOverlay').classList.add('open');
+  updateMoonsetOutput();
+}
+
+function closeMoonsetModal() {
+  document.getElementById('moonsetModalOverlay').classList.remove('open');
+}
+
+function onMoonsetChange() {
+  if (!window._artemisScene) return;
+  const s = window._artemisScene.moonSettings;
+
+  // Read values from sliders/inputs
+  const colorHex = document.getElementById('ms-color').value.replace('#', '');
+  const emissiveHex = document.getElementById('ms-emissive').value.replace('#', '');
+  s.color = parseInt(colorHex, 16) || 0xcccccc;
+  s.emissive = parseInt(emissiveHex, 16) || 0x111111;
+  s.emissiveIntensity = parseFloat(document.getElementById('ms-emissiveInt').value);
+  s.shininess = parseFloat(document.getElementById('ms-shininess').value);
+  s.darkSideBrightness = parseFloat(document.getElementById('ms-darkSide').value);
+  s.sunLightIntensity = parseFloat(document.getElementById('ms-sunInt').value);
+  s.sunDirX = parseFloat(document.getElementById('ms-sunX').value);
+  s.sunDirY = parseFloat(document.getElementById('ms-sunY').value);
+  s.sunDirZ = parseFloat(document.getElementById('ms-sunZ').value);
+
+  // Update value displays
+  document.getElementById('ms-emissiveInt-val').textContent = s.emissiveIntensity.toFixed(2);
+  document.getElementById('ms-shininess-val').textContent = s.shininess.toFixed(0);
+  document.getElementById('ms-darkSide-val').textContent = s.darkSideBrightness.toFixed(2);
+  document.getElementById('ms-sunInt-val').textContent = s.sunLightIntensity.toFixed(1);
+  document.getElementById('ms-sunX-val').textContent = s.sunDirX.toFixed(2);
+  document.getElementById('ms-sunY-val').textContent = s.sunDirY.toFixed(2);
+  document.getElementById('ms-sunZ-val').textContent = s.sunDirZ.toFixed(2);
+
+  // Apply to scene
+  window._artemisScene.applyMoonSettings();
+
+  // Update copyable output
+  updateMoonsetOutput();
+}
+
+function updateMoonsetOutput() {
+  if (!window._artemisScene) return;
+  const s = window._artemisScene.moonSettings;
+  const json = JSON.stringify({
+    color: '0x' + s.color.toString(16).padStart(6, '0'),
+    emissive: '0x' + s.emissive.toString(16).padStart(6, '0'),
+    emissiveIntensity: s.emissiveIntensity,
+    shininess: s.shininess,
+    darkSideBrightness: s.darkSideBrightness,
+    sunLightIntensity: s.sunLightIntensity,
+    sunDirX: s.sunDirX,
+    sunDirY: s.sunDirY,
+    sunDirZ: s.sunDirZ
+  }, null, 2);
+  document.getElementById('moonsetOutput').value = json;
 }
 
 /* ============================================================

@@ -14,7 +14,7 @@
  */
 
 import * as THREE from 'three';
-import OEM_POSITIONS, { OEM_WITH_MET, getOrionPositionAtMET, getOrionFullPosition, OEM_MET_START, OEM_MET_END, MISSION_END_MET } from './trajectory.js';
+import OEM_POSITIONS, { OEM_WITH_MET, getOrionPositionAtMET, getOrionFullPosition, OEM_MET_START, OEM_MET_END, MISSION_END_MET, getMoonEphemerisAtMET } from './trajectory.js';
 
 /* ============================================================
    SHARED SCENE CONSTANTS
@@ -256,11 +256,9 @@ function init(containerEl) {
   // LIVE indicator (above Orion)
   createLiveIndicator();
 
-  // Moon (compute phase offset first, then create)
-  computeMoonPhaseOffset();
+  // Moon (uses JPL Horizons ephemeris for real 3D position)
   createMoon();
   createMoonOrbitTrace();
-  createGravityArcs();
 
   // Axis labels at grid edges
   createAxisLabels();
@@ -444,6 +442,7 @@ function createGrid() {
     }
   }
 
+  gridGroup.position.z = -5; // below all other scene elements
   contentGroup.add(gridGroup);
 }
 
@@ -1051,57 +1050,78 @@ function setLiveMode(isLive) {
    be approximately at that same angle from Earth.
    ============================================================ */
 
-const MOON_ORBITAL_PERIOD = 27.322 * 24 * 3600; // seconds
-const MOON_ANGULAR_SPEED = (2 * Math.PI) / MOON_ORBITAL_PERIOD; // rad/s
-
-// Flyby MET: 5d 00:29:59 = 432599 seconds
-const FLYBY_MET = 5 * 86400 + 29 * 60 + 59;
-
-// At flyby, Orion's position from OEM determines where the Moon should be.
-// We'll compute the Moon's initial phase so it aligns with the flyby geometry.
-// The Moon's angle at any MET: angle = MOON_PHASE_OFFSET + MOON_ANGULAR_SPEED * met
-// We set MOON_PHASE_OFFSET so that at FLYBY_MET the Moon is near the Orion flyby point.
-let MOON_PHASE_OFFSET = 0; // computed at init after OEM is available
-
-function computeMoonPhaseOffset() {
-  // Get Orion's position at flyby time — this tells us where the Moon should be
-  const flybyPos = getOrionPositionAtMET(FLYBY_MET);
-  if (!flybyPos) return;
-
-  // Moon angle at flyby should match the direction to Orion from Earth
-  // atan2(y, x) gives the angle in the XY plane
-  const flybyAngle = Math.atan2(flybyPos.y, flybyPos.x);
-
-  // Moon angle at flyby = MOON_PHASE_OFFSET + MOON_ANGULAR_SPEED * FLYBY_MET
-  // So: MOON_PHASE_OFFSET = flybyAngle - MOON_ANGULAR_SPEED * FLYBY_MET
-  MOON_PHASE_OFFSET = flybyAngle - MOON_ANGULAR_SPEED * FLYBY_MET;
-}
-
+/**
+ * Get Moon's real 3D position at a given MET using JPL Horizons ephemeris.
+ * Returns THREE.Vector3 in scene units (Earth-relative, EME2000).
+ */
 function getMoonPositionAtMET(metSec) {
-  const angle = MOON_PHASE_OFFSET + MOON_ANGULAR_SPEED * metSec;
-  return new THREE.Vector3(
-    MOON_ORBIT_RADIUS * Math.cos(angle),
-    MOON_ORBIT_RADIUS * Math.sin(angle),
-    0 // Moon orbit in XY plane (simplified — real inclination is ~5°)
-  );
+  const pos = getMoonEphemerisAtMET(metSec);
+  if (pos) return new THREE.Vector3(pos.x, pos.y, pos.z);
+  // Fallback: origin
+  return new THREE.Vector3(0, 0, 0);
 }
+
+// --- Moon settings (adjustable via MOONSET debug modal) ---
+const moonSettings = {
+  color: 0xcccccc,
+  emissive: 0x111111,
+  emissiveIntensity: 0.05,
+  shininess: 5,
+  darkSideBrightness: 0.03,  // ambient light intensity on Moon
+  sunLightIntensity: 1.8,    // directional light from Sun
+  sunDirX: 1.0,
+  sunDirY: 0.0,
+  sunDirZ: 0.3
+};
+
+let moonMaterial = null;
+let moonSunLight = null;
+let moonAmbientLight = null;
 
 function createMoon() {
-  // Moon sphere
-  const geo = new THREE.SphereGeometry(MOON_RADIUS, 24, 24);
-  const mat = new THREE.MeshPhongMaterial({
-    color: 0xcccccc,
-    emissive: 0x444444,
-    emissiveIntensity: 0.2,
-    shininess: 10
+  // Moon sphere with sharp terminator material
+  const geo = new THREE.SphereGeometry(MOON_RADIUS, 32, 32);
+  moonMaterial = new THREE.MeshPhongMaterial({
+    color: moonSettings.color,
+    emissive: moonSettings.emissive,
+    emissiveIntensity: moonSettings.emissiveIntensity,
+    shininess: moonSettings.shininess
   });
-  moonMesh = new THREE.Mesh(geo, mat);
-  earthMesh.add(moonMesh); // child of Earth — positions are Earth-relative
+  moonMesh = new THREE.Mesh(geo, moonMaterial);
+  earthMesh.add(moonMesh);
+
+  // Dedicated ambient light for Moon dark side (very dim)
+  moonAmbientLight = new THREE.AmbientLight(0xffffff, moonSettings.darkSideBrightness);
+  moonMesh.add(moonAmbientLight);
+
+  // Dedicated directional light from Sun direction for sharp terminator
+  moonSunLight = new THREE.DirectionalLight(0xffffff, moonSettings.sunLightIntensity);
+  moonSunLight.position.set(moonSettings.sunDirX, moonSettings.sunDirY, moonSettings.sunDirZ).normalize();
+  // Light as child of earthMesh so it stays in Earth-relative coords
+  // (Sun direction is constant relative to Earth since Sun is so far away)
+  earthMesh.add(moonSunLight);
 
   // Moon SOI ring (66.2u radius — gravitational sphere of influence)
   const moonSoiGeo = new THREE.RingGeometry(65.7, 66.7, 64);
   const moonSoiMat = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
   moonMesh.add(new THREE.Mesh(moonSoiGeo, moonSoiMat));
+}
+
+function applyMoonSettings() {
+  if (moonMaterial) {
+    moonMaterial.color.setHex(moonSettings.color);
+    moonMaterial.emissive.setHex(moonSettings.emissive);
+    moonMaterial.emissiveIntensity = moonSettings.emissiveIntensity;
+    moonMaterial.shininess = moonSettings.shininess;
+    moonMaterial.needsUpdate = true;
+  }
+  if (moonAmbientLight) {
+    moonAmbientLight.intensity = moonSettings.darkSideBrightness;
+  }
+  if (moonSunLight) {
+    moonSunLight.intensity = moonSettings.sunLightIntensity;
+    moonSunLight.position.set(moonSettings.sunDirX, moonSettings.sunDirY, moonSettings.sunDirZ).normalize();
+  }
 }
 
 function createMoonOrbitTrace() {
@@ -1132,95 +1152,6 @@ function createMoonOrbitTrace() {
 function updateMoonPosition() {
   const pos = getMoonPositionAtMET(currentMET);
   moonMesh.position.copy(pos);
-}
-
-/* ============================================================
-   MOON GRAVITY ARCS (WiFi-style indicator)
-   ============================================================
-   4 concentric arcs between Moon and Orion, visible only when
-   Orion is within Moon SOI (66.2u). Opacity scales with proximity:
-   0 at SOI edge, full at closest approach. Arcs rotate to always
-   face from Moon toward Orion.
-   ============================================================ */
-
-const MOON_SOI = 66.2; // scene units
-const GRAVITY_ARC_COUNT = 4;
-const GRAVITY_ARC_SPREAD = Math.PI * 0.35; // how wide each arc is (~63°)
-let gravityArcsGroup = null;
-let gravityArcMaterials = []; // store materials for per-frame opacity update
-
-function createGravityArcs() {
-  gravityArcsGroup = new THREE.Group();
-  gravityArcsGroup.visible = false;
-  gravityArcMaterials = [];
-
-  for (let i = 0; i < GRAVITY_ARC_COUNT; i++) {
-    // Arcs get progressively larger: inner = close to Moon, outer = further out
-    const radius = 3 + i * 3.5; // 3, 6.5, 10, 13.5 scene units from Moon
-    const segments = 24;
-    const points = [];
-
-    // Arc centered at angle 0 (will be rotated toward Orion each frame)
-    for (let s = 0; s <= segments; s++) {
-      const angle = -GRAVITY_ARC_SPREAD / 2 + (s / segments) * GRAVITY_ARC_SPREAD;
-      points.push(new THREE.Vector3(
-        radius * Math.cos(angle),
-        radius * Math.sin(angle),
-        0
-      ));
-    }
-
-    const geo = new THREE.BufferGeometry().setFromPoints(points);
-    const mat = new THREE.LineBasicMaterial({
-      color: 0xaaaaaa,
-      transparent: true,
-      opacity: 0
-    });
-    const line = new THREE.Line(geo, mat);
-    gravityArcsGroup.add(line);
-    gravityArcMaterials.push(mat);
-  }
-
-  // Arcs are children of earthMesh (same coordinate space as Moon and Orion)
-  earthMesh.add(gravityArcsGroup);
-}
-
-function updateGravityArcs() {
-  if (!gravityArcsGroup || !orionMarker) return;
-
-  // Get Moon and Orion positions in Earth-relative space (local to earthMesh)
-  const moonPos = moonMesh.position;
-  const orionPos = orionMarker.position;
-
-  // Distance from Moon to Orion
-  const dx = orionPos.x - moonPos.x;
-  const dy = orionPos.y - moonPos.y;
-  const dz = orionPos.z - moonPos.z;
-  const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-  // Only visible when inside Moon SOI
-  if (dist > MOON_SOI || !orionMarker.visible) {
-    gravityArcsGroup.visible = false;
-    return;
-  }
-
-  gravityArcsGroup.visible = true;
-
-  // Position at Moon's location
-  gravityArcsGroup.position.copy(moonPos);
-
-  // Rotate to face from Moon toward Orion (in XY plane)
-  const angle = Math.atan2(dy, dx);
-  gravityArcsGroup.rotation.z = angle;
-
-  // Opacity: 0 at SOI edge, 1 at closest approach
-  // Use inverse distance for a natural gravity feel
-  const proximity = 1 - (dist / MOON_SOI); // 0 at edge, 1 at Moon center
-  const intensity = Math.pow(proximity, 0.5); // sqrt for a gentler curve
-
-  for (let i = 0; i < GRAVITY_ARC_COUNT; i++) {
-    gravityArcMaterials[i].opacity = intensity * 0.7; // max 0.7 opacity
-  }
 }
 
 /* ============================================================
@@ -1837,7 +1768,6 @@ function renderFrame(timestamp) {
   lerpZoom(dt);
   lerpEarth(dt);
   updateTracking();
-  updateGravityArcs();
   updateOrionMarkerScale();
   updateGhostCircles();
   updateLiveIndicator();
@@ -1941,6 +1871,8 @@ export default {
   returnCameraToOrion,
   lerpToMET,
   flashActivityPip,
+  moonSettings,
+  applyMoonSettings,
   dispose,
   MISSION_DURATION_SEC,
   GRID_TOTAL,
