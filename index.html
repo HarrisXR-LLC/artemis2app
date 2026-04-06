@@ -318,10 +318,16 @@ html, body {
   pointer-events: none;
 }
 .hud--top-left {
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 12px;
+  left: 5%;
+  right: 5%;
 }
+.hud--bottom-left {
+  bottom: calc(25vh + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .hud-chip {
   background: var(--chip-bg);
   backdrop-filter: blur(8px);
@@ -335,7 +341,11 @@ html, body {
   width: 100%;
   height: 52px;
   overflow: hidden;
-  border-radius: 0 0 8px 8px;
+}
+.hud-chip--timer {
+  position: relative;
+  text-align: center;
+  padding: 7px 10px 5px;
 }
 
 
@@ -512,9 +522,9 @@ html, body {
    ============================================================ */
 .details-panel {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 6px;
+  left: 5%;
+  right: 5%;
   height: 25vh;
   display: flex;
   flex-direction: column;
@@ -524,21 +534,11 @@ html, body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px 10px 0 0;
+  border-radius: 10px;
   z-index: 10;
   pointer-events: auto;
 }
 
-.details-timer {
-  position: relative;
-  padding: 7px 10px 5px;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
-}
-.details-timer-content {
-  text-align: center;
-}
 .time-mode-toggle {
   position: absolute;
   right: 10px;
@@ -1168,8 +1168,10 @@ html, body {
     width: 640px;
     max-width: 90%;
   }
-  .hud--top-left .hud-chip {
-    border-radius: 8px;
+  .hud--bottom-left {
+    bottom: calc(25vh + 20px);
+    left: 50%;
+    transform: translateX(-50%);
   }
   .details-panel {
     left: 50%;
@@ -1179,7 +1181,6 @@ html, body {
     width: 640px;
     max-width: 90%;
     height: 25vh;
-    border-radius: 10px;
   }
 }
 </style>
@@ -1209,7 +1210,7 @@ html, body {
     <div class="sidebar-tabs" id="sidebarTabs"></div>
     <div class="sidebar-disclaimer">
       Approximate mission data &middot; Updated as mission progresses<br>
-      Data Sources: NASA &middot; Updated 4/5/26
+      Data &copy; NASA &middot; Updated 4/5/26
       <button class="debug-btn" onclick="toggleDebugPanel()">DEBUG</button>
     </div>
   </nav>
@@ -1233,19 +1234,20 @@ html, body {
       </div>
 
 
+      <div class="hud hud--bottom-left">
+        <div class="hud-chip hud-chip--timer">
+          <div class="hud-timer-label" id="hudTimerLabel">Mission Elapsed Time</div>
+          <div class="hud-timer" id="hudTimer">T+ 00:00:00:00</div>
+          <button class="time-mode-toggle" onclick="toggleTimeMode()" aria-label="Toggle time display mode">
+            <span class="time-mode-dot" id="timeModeMet"></span>
+            <span class="time-mode-dot" id="timeModeRealtime"></span>
+          </button>
+        </div>
+      </div>
+
     </div>
 
     <div class="details-panel" id="detailsPanel">
-      <div class="details-timer">
-        <div class="details-timer-content">
-          <div class="hud-timer-label" id="hudTimerLabel">Mission Elapsed Time</div>
-          <div class="hud-timer" id="hudTimer">T+ 00:00:00:00</div>
-        </div>
-        <button class="time-mode-toggle" onclick="toggleTimeMode()" aria-label="Toggle time display mode">
-          <span class="time-mode-dot" id="timeModeMet"></span>
-          <span class="time-mode-dot" id="timeModeRealtime"></span>
-        </button>
-      </div>
       <div class="info-tabs" id="infoTabs">
         <button class="info-tab active" data-tab="activities">Stage's Todos</button>
         <button class="info-tab" data-tab="description">Info</button>
@@ -1271,7 +1273,7 @@ html, body {
 </div>
 
 <footer class="status-bar">
-  <div class="status-bar-disclaimer">Approximate mission data &middot; Updated as mission progresses &middot; Data Sources: NASA &middot; Updated 4/5/26</div>
+  <div class="status-bar-disclaimer">Approximate mission data &middot; Updated as mission progresses &middot; Updated 4/5/26</div>
   <div>&copy; 2026 <a href="https://www.harrisxr.com" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">HarrisXR LLC</a> | MIT License | NASA materials &copy; NASA | <a href="javascript:void(0)" onclick="openAboutModal()" style="color:inherit;text-decoration:underline">About</a></div>
 </footer>
 
@@ -2641,6 +2643,7 @@ function update(timestamp) {
   computeMarkerPosition();
   updateMarkerTrail(timestamp);
   updateZoomLerp();
+  updateIntroLerp();
 }
 
 function render() {
@@ -4062,6 +4065,73 @@ function updateZoomLerp() {
 
 function cancelZoomLerp() {
   zoomLerp = null;
+  introLerp = null; // also cancel intro animation
+}
+
+/* ============================================================
+   INTRO LERP — zoomed-out Earth → LIVE stage over 5 seconds
+   ============================================================ */
+let introLerp = null; // { startPanX, startPanY, startZoom, targetPanX, targetPanY, targetZoom, startTime, duration }
+
+function startIntroLerp() {
+  // Compute the "zoomed out on Moon" starting view
+  const layout = getUnifiedLayout();
+  const startZoom = 0.7;
+  const startPanX = canvasW / 2 - layout.moonCx * startZoom;
+  const startPanY = canvasH / 2 - layout.moonCy * startZoom;
+
+  // Set the initial view immediately
+  panX = startPanX;
+  panY = startPanY;
+  zoom = startZoom;
+
+  // Compute the LIVE stage target (same logic as zoomToSegment)
+  const idx = STAGES.findIndex(s => s.id === liveStageId);
+  if (idx < 0 || segmentConfigs.length === 0) return;
+  const cfg = segmentConfigs[idx];
+  if (!cfg) return;
+
+  const pts = sampleSegment(cfg, 30);
+  if (pts.length === 0) return;
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const p of pts) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  const pad = 60;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+
+  const segW = maxX - minX;
+  const segH = maxY - minY;
+  const targetZoom = Math.max(0.5, Math.min(3, Math.min(canvasW / segW, (canvasH * 0.66) / segH)));
+  const segCx = (minX + maxX) / 2;
+  const segCy = (minY + maxY) / 2;
+  const targetPanX = canvasW / 2 - segCx * targetZoom;
+  const targetPanY = canvasH * 0.33 - segCy * targetZoom;
+
+  introLerp = {
+    startPanX, startPanY, startZoom,
+    targetPanX, targetPanY, targetZoom,
+    startTime: performance.now(),
+    duration: 3000
+  };
+}
+
+function updateIntroLerp() {
+  if (!introLerp) return;
+  const elapsed = performance.now() - introLerp.startTime;
+  const t = Math.min(1, elapsed / introLerp.duration);
+  // Ease out cubic
+  const e = 1 - Math.pow(1 - t, 3);
+
+  panX = introLerp.startPanX + (introLerp.targetPanX - introLerp.startPanX) * e;
+  panY = introLerp.startPanY + (introLerp.targetPanY - introLerp.startPanY) * e;
+  zoom = introLerp.startZoom + (introLerp.targetZoom - introLerp.startZoom) * e;
+
+  if (t >= 1) introLerp = null;
 }
 
 function zoomToMet(metSeconds) {
@@ -4104,6 +4174,9 @@ function init() {
   computeLiveStage();
   selectStage(liveStageId);
   _initialLoadComplete = true; // after this, tab clicks will zoom to segments
+
+  // Start intro lerp: zoomed-out Earth → LIVE stage
+  startIntroLerp();
 
   // Start the visualization animation loop
   startRenderLoop();
