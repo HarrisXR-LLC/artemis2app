@@ -200,8 +200,10 @@ function createStarfield() {
     color: 0xffffff,
     transparent: true,
     opacity: 0.6,
-    size: 0.004, // in NDC units for ortho camera (-1 to 1)
-    sizeAttenuation: false
+    size: 0.004,
+    sizeAttenuation: false,
+    depthWrite: false,
+    depthTest: false
   });
 
   const points = new THREE.Points(geometry, material);
@@ -422,10 +424,12 @@ function createGrid() {
   const halfGrid = GRID_TOTAL / 2;
 
   const majorMat = new THREE.LineBasicMaterial({
-    color: 0x2266cc, transparent: true, opacity: 0.25
+    color: 0x2266cc, transparent: true, opacity: 0.25,
+    depthWrite: false
   });
   const minorMat = new THREE.LineBasicMaterial({
-    color: 0x888888, transparent: true, opacity: 0.06
+    color: 0x888888, transparent: true, opacity: 0.06,
+    depthWrite: false
   });
 
   for (let day = 0; day <= MISSION_DAYS; day++) {
@@ -455,25 +459,235 @@ function addLine(group, x1, y1, x2, y2, material) {
 }
 
 /* ============================================================
-   EARTH
+   EARTH (day/night shader with rotation)
    ============================================================ */
 
-function createEarth() {
-  const geo = new THREE.SphereGeometry(EARTH_RADIUS, 32, 32);
-  const mat = new THREE.MeshPhongMaterial({
-    color: 0x2196f3,
-    emissive: 0x0d3b6e,
-    emissiveIntensity: 0.3,
-    shininess: 30
-  });
-  earthMesh = new THREE.Mesh(geo, mat);
+// Earth rotation constants
+const EARTH_SIDEREAL_DAY = 86164.0905; // seconds
+const EARTH_ANGULAR_SPEED_ROT = (2 * Math.PI) / EARTH_SIDEREAL_DAY; // rad/s
+// GMST at T0 (2026-04-01 22:35:12 UTC) = 169.097° = 2.9513 rad
+const EARTH_GMST_AT_T0 = 2.9513; // radians
+// Earth axial tilt
+const EARTH_AXIAL_TILT = 23.4 * Math.PI / 180; // radians
 
-  // Earth SOI ring (925u radius — Hill sphere relative to Sun)
+const earthSettings = {
+  darkSideBrightness: 0.43,
+  sunLightIntensity: 1.0,
+  terminatorHardness: 30,
+  nightIntensity: 1.9,
+  sunDirX: 1.0,
+  sunDirY: 0.55,
+  sunDirZ: 0.3,
+  meshRotX: Math.PI / 2,
+  meshRotY: 0,
+  meshRotZ: 0,
+  // Tint controls
+  dayTintR: 1.0, dayTintG: 1.0, dayTintB: 1.35,
+  nightTintR: 1.0, nightTintG: 1.0, nightTintB: 1.3,
+  // Fresnel / atmosphere
+  fresnelIntensity: 2.1,
+  fresnelPower: 3.5,
+  fresnelFalloff: 1.9,
+  atmosColorR: 0.55, atmosColorG: 0.65, atmosColorB: 1.0,
+  glowSize: 2.7,
+  glowOpacity: 0.45,
+  // HSV adjustments
+  hueShift: -0.01,
+  saturation: 0.8,
+  brightness: 0.8
+};
+
+let earthShaderMaterial = null;
+let earthInnerMesh = null;
+let earthGlowSprite = null;
+let earthGlowMaterial = null;
+
+const earthVertexShader = `
+  varying vec3 vNormal;
+  varying vec3 vViewDir;
+  varying vec2 vUv;
+  void main() {
+    vNormal = normalize(normalMatrix * normal);
+    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+    vViewDir = normalize(-mvPos.xyz);
+    vUv = uv;
+    gl_Position = projectionMatrix * mvPos;
+  }
+`;
+
+const earthFragmentShader = `
+  uniform sampler2D uDayTexture;
+  uniform sampler2D uNightTexture;
+  uniform vec3 uSunDir;
+  uniform float uSunIntensity;
+  uniform float uDarkBrightness;
+  uniform float uTerminatorHardness;
+  uniform float uNightIntensity;
+  uniform vec3 uDayTint;
+  uniform vec3 uNightTint;
+  uniform float uFresnelIntensity;
+  uniform float uFresnelPower;
+  uniform float uFresnelFalloff;
+  uniform vec3 uAtmosColor;
+  uniform float uHueShift;
+  uniform float uSaturation;
+  uniform float uBrightness;
+  varying vec3 vNormal;
+  varying vec3 vViewDir;
+  varying vec2 vUv;
+
+  // RGB to HSV and back
+  vec3 rgb2hsv(vec3 c) {
+    vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
+    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+  }
+  vec3 hsv2rgb(vec3 c) {
+    vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+  }
+
+  void main() {
+    vec3 sunDir = normalize(uSunDir);
+    float NdotL = dot(vNormal, sunDir);
+    // Adjustable terminator
+    float lighting = clamp(NdotL * uTerminatorHardness * 0.5 + 0.5, 0.0, 1.0);
+    vec4 dayColor = texture2D(uDayTexture, vUv);
+    vec4 nightColor = texture2D(uNightTexture, vUv);
+    // Lit side: day texture with tint
+    vec3 lit = dayColor.rgb * uDayTint * uSunIntensity * lighting;
+    // Dark side: night texture (city lights) with tint + ambient
+    float darkMix = 1.0 - lighting;
+    vec3 dark = nightColor.rgb * uNightTint * uNightIntensity * darkMix + dayColor.rgb * uDarkBrightness * darkMix;
+    // Fresnel rim glow with sun-side falloff
+    float fresnel = pow(1.0 - max(dot(vNormal, vViewDir), 0.0), uFresnelPower);
+    // Fade Fresnel on dark side: use NdotL remapped with falloff control
+    float sunSideMask = clamp(NdotL * uFresnelFalloff + 0.5, 0.0, 1.0);
+    vec3 rim = uAtmosColor * fresnel * uFresnelIntensity * sunSideMask;
+    vec3 color = lit + dark + rim;
+    // HSV adjustment
+    vec3 hsv = rgb2hsv(color);
+    hsv.x = fract(hsv.x + uHueShift);
+    hsv.y *= uSaturation;
+    color = hsv2rgb(hsv) * uBrightness;
+    gl_FragColor = vec4(color, 1.0);
+  }
+`;
+
+function createEarthGlowTexture() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cx = size / 2, cy = size / 2;
+  const glow = ctx.createRadialGradient(cx, cy, size * 0.2, cx, cy, cx);
+  glow.addColorStop(0, 'rgba(70,140,255,0.5)');
+  glow.addColorStop(0.3, 'rgba(70,140,255,0.2)');
+  glow.addColorStop(0.7, 'rgba(40,100,255,0.05)');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(canvas);
+}
+
+function createEarth() {
+  earthMesh = new THREE.Group();
+
+  // Inner sphere with day/night + Fresnel shader (38 segments for smoother look)
+  const geo = new THREE.SphereGeometry(EARTH_RADIUS, 46, 46);
+  const dayTexture = new THREE.TextureLoader().load('./earth_day_1k.jpg');
+  dayTexture.colorSpace = THREE.SRGBColorSpace;
+  const nightTexture = new THREE.TextureLoader().load('./earth_night_1k.jpg');
+  nightTexture.colorSpace = THREE.SRGBColorSpace;
+
+  earthShaderMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uDayTexture: { value: dayTexture },
+      uNightTexture: { value: nightTexture },
+      uSunDir: { value: new THREE.Vector3(earthSettings.sunDirX, earthSettings.sunDirY, earthSettings.sunDirZ).normalize() },
+      uSunIntensity: { value: earthSettings.sunLightIntensity },
+      uDarkBrightness: { value: earthSettings.darkSideBrightness },
+      uTerminatorHardness: { value: earthSettings.terminatorHardness },
+      uNightIntensity: { value: earthSettings.nightIntensity },
+      uDayTint: { value: new THREE.Vector3(earthSettings.dayTintR, earthSettings.dayTintG, earthSettings.dayTintB) },
+      uNightTint: { value: new THREE.Vector3(earthSettings.nightTintR, earthSettings.nightTintG, earthSettings.nightTintB) },
+      uFresnelIntensity: { value: earthSettings.fresnelIntensity },
+      uFresnelPower: { value: earthSettings.fresnelPower },
+      uFresnelFalloff: { value: earthSettings.fresnelFalloff },
+      uAtmosColor: { value: new THREE.Vector3(earthSettings.atmosColorR, earthSettings.atmosColorG, earthSettings.atmosColorB) },
+      uHueShift: { value: earthSettings.hueShift },
+      uSaturation: { value: earthSettings.saturation },
+      uBrightness: { value: earthSettings.brightness }
+    },
+    vertexShader: earthVertexShader,
+    fragmentShader: earthFragmentShader
+  });
+
+  earthInnerMesh = new THREE.Mesh(geo, earthShaderMaterial);
+  earthInnerMesh.rotation.x = EARTH_AXIAL_TILT;
+  earthMesh.add(earthInnerMesh);
+
+  // Atmosphere glow sprite (underneath Earth, fades in at zoom >= 20)
+  const glowTexture = createEarthGlowTexture();
+  earthGlowMaterial = new THREE.SpriteMaterial({
+    map: glowTexture,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+  earthGlowSprite = new THREE.Sprite(earthGlowMaterial);
+  const glowDiameter = EARTH_DIAMETER * earthSettings.glowSize;
+  earthGlowSprite.scale.set(glowDiameter, glowDiameter, 1);
+  earthGlowSprite.renderOrder = -1; // render behind Earth sphere
+  earthMesh.add(earthGlowSprite);
+
+  // Earth SOI ring
   const soiGeo = new THREE.RingGeometry(924, 926, 128);
-  const soiMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
+  const soiMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, side: THREE.DoubleSide, transparent: true, opacity: 0.3, depthWrite: false });
   earthMesh.add(new THREE.Mesh(soiGeo, soiMat));
 
   contentGroup.add(earthMesh);
+}
+
+function updateEarthRotation() {
+  if (!earthInnerMesh) return;
+  const rotAngle = EARTH_GMST_AT_T0 + EARTH_ANGULAR_SPEED_ROT * currentMET;
+  earthInnerMesh.rotation.x = EARTH_AXIAL_TILT + earthSettings.meshRotX;
+  earthInnerMesh.rotation.y = rotAngle + earthSettings.meshRotY;
+  earthInnerMesh.rotation.z = earthSettings.meshRotZ;
+
+  // Atmosphere glow sprite: fade in at zoom >= 20
+  if (earthGlowSprite && earthGlowMaterial) {
+    const glowAlpha = zoomLevel >= 20 ? Math.min(earthSettings.glowOpacity, (zoomLevel - 20) / 10 * earthSettings.glowOpacity) : 0;
+    earthGlowMaterial.opacity = glowAlpha;
+    const glowDiameter = EARTH_DIAMETER * earthSettings.glowSize;
+    earthGlowSprite.scale.set(glowDiameter, glowDiameter, 1);
+  }
+}
+
+function applyEarthSettings() {
+  if (earthShaderMaterial && earthShaderMaterial.uniforms) {
+    const u = earthShaderMaterial.uniforms;
+    u.uSunDir.value.set(earthSettings.sunDirX, earthSettings.sunDirY, earthSettings.sunDirZ).normalize();
+    u.uSunIntensity.value = earthSettings.sunLightIntensity;
+    u.uDarkBrightness.value = earthSettings.darkSideBrightness;
+    u.uTerminatorHardness.value = earthSettings.terminatorHardness;
+    u.uNightIntensity.value = earthSettings.nightIntensity;
+    u.uDayTint.value.set(earthSettings.dayTintR, earthSettings.dayTintG, earthSettings.dayTintB);
+    u.uNightTint.value.set(earthSettings.nightTintR, earthSettings.nightTintG, earthSettings.nightTintB);
+    u.uFresnelIntensity.value = earthSettings.fresnelIntensity;
+    u.uFresnelPower.value = earthSettings.fresnelPower;
+    u.uFresnelFalloff.value = earthSettings.fresnelFalloff;
+    u.uAtmosColor.value.set(earthSettings.atmosColorR, earthSettings.atmosColorG, earthSettings.atmosColorB);
+    u.uHueShift.value = earthSettings.hueShift;
+    u.uSaturation.value = earthSettings.saturation;
+    u.uBrightness.value = earthSettings.brightness;
+  }
 }
 
 function updateEarthPosition() {
@@ -1063,64 +1277,86 @@ function getMoonPositionAtMET(metSec) {
 
 // --- Moon settings (adjustable via MOONSET debug modal) ---
 const moonSettings = {
-  color: 0xcccccc,
-  emissive: 0x111111,
-  emissiveIntensity: 0.05,
-  shininess: 5,
-  darkSideBrightness: 0.03,  // ambient light intensity on Moon
-  sunLightIntensity: 1.8,    // directional light from Sun
+  darkSideBrightness: 0.26,   // ambient on dark side (0 = pitch black)
+  sunLightIntensity: 1.6,     // brightness of lit side
+  terminatorHardness: 22,     // 1 = soft gradient, 20+ = razor sharp
   sunDirX: 1.0,
-  sunDirY: 0.0,
+  sunDirY: 0.55,
   sunDirZ: 0.3
 };
 
 let moonMaterial = null;
-let moonSunLight = null;
-let moonAmbientLight = null;
+let moonSoiRing = null;
+
+// Custom Moon shader: texture + directional lighting with adjustable terminator
+const moonVertexShader = `
+  varying vec3 vNormal;
+  varying vec2 vUv;
+  void main() {
+    vNormal = normalize(normalMatrix * normal);
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const moonFragmentShader = `
+  uniform sampler2D uTexture;
+  uniform vec3 uSunDir;
+  uniform float uSunIntensity;
+  uniform float uDarkBrightness;
+  uniform float uTerminatorHardness;
+  varying vec3 vNormal;
+  varying vec2 vUv;
+  void main() {
+    vec3 sunDir = normalize(uSunDir);
+    float NdotL = dot(vNormal, sunDir);
+    // Adjustable terminator: remap [-1,1] with hardness control
+    // hardness=1 is standard cosine, higher = sharper edge
+    float lighting = clamp(NdotL * uTerminatorHardness * 0.5 + 0.5, 0.0, 1.0);
+    // Mix between dark side brightness and full sun intensity
+    float brightness = mix(uDarkBrightness, uSunIntensity, lighting);
+    vec4 texColor = texture2D(uTexture, vUv);
+    gl_FragColor = vec4(texColor.rgb * brightness, 1.0);
+  }
+`;
 
 function createMoon() {
-  // Moon sphere with sharp terminator material
+  // Moon sphere with custom shader for adjustable terminator
   const geo = new THREE.SphereGeometry(MOON_RADIUS, 32, 32);
-  moonMaterial = new THREE.MeshPhongMaterial({
-    color: moonSettings.color,
-    emissive: moonSettings.emissive,
-    emissiveIntensity: moonSettings.emissiveIntensity,
-    shininess: moonSettings.shininess
+  // Rotate geometry 90° CW around pole to align near-side texture with lookAt face
+  geo.rotateY(-Math.PI / 2);
+  const moonTexture = new THREE.TextureLoader().load('./lroc_color_1k.jpg');
+  moonTexture.colorSpace = THREE.SRGBColorSpace;
+
+  moonMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uTexture: { value: moonTexture },
+      uSunDir: { value: new THREE.Vector3(moonSettings.sunDirX, moonSettings.sunDirY, moonSettings.sunDirZ).normalize() },
+      uSunIntensity: { value: moonSettings.sunLightIntensity },
+      uDarkBrightness: { value: moonSettings.darkSideBrightness },
+      uTerminatorHardness: { value: moonSettings.terminatorHardness }
+    },
+    vertexShader: moonVertexShader,
+    fragmentShader: moonFragmentShader
   });
+
   moonMesh = new THREE.Mesh(geo, moonMaterial);
   earthMesh.add(moonMesh);
 
-  // Dedicated ambient light for Moon dark side (very dim)
-  moonAmbientLight = new THREE.AmbientLight(0xffffff, moonSettings.darkSideBrightness);
-  moonMesh.add(moonAmbientLight);
-
-  // Dedicated directional light from Sun direction for sharp terminator
-  moonSunLight = new THREE.DirectionalLight(0xffffff, moonSettings.sunLightIntensity);
-  moonSunLight.position.set(moonSettings.sunDirX, moonSettings.sunDirY, moonSettings.sunDirZ).normalize();
-  // Light as child of earthMesh so it stays in Earth-relative coords
-  // (Sun direction is constant relative to Earth since Sun is so far away)
-  earthMesh.add(moonSunLight);
-
   // Moon SOI ring (66.2u radius — gravitational sphere of influence)
+  // Decoupled from moonMesh so tidal locking doesn't rotate the ring
   const moonSoiGeo = new THREE.RingGeometry(65.7, 66.7, 64);
   const moonSoiMat = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
-  moonMesh.add(new THREE.Mesh(moonSoiGeo, moonSoiMat));
+  moonSoiRing = new THREE.Mesh(moonSoiGeo, moonSoiMat);
+  earthMesh.add(moonSoiRing);
 }
 
 function applyMoonSettings() {
-  if (moonMaterial) {
-    moonMaterial.color.setHex(moonSettings.color);
-    moonMaterial.emissive.setHex(moonSettings.emissive);
-    moonMaterial.emissiveIntensity = moonSettings.emissiveIntensity;
-    moonMaterial.shininess = moonSettings.shininess;
-    moonMaterial.needsUpdate = true;
-  }
-  if (moonAmbientLight) {
-    moonAmbientLight.intensity = moonSettings.darkSideBrightness;
-  }
-  if (moonSunLight) {
-    moonSunLight.intensity = moonSettings.sunLightIntensity;
-    moonSunLight.position.set(moonSettings.sunDirX, moonSettings.sunDirY, moonSettings.sunDirZ).normalize();
+  if (moonMaterial && moonMaterial.uniforms) {
+    moonMaterial.uniforms.uSunDir.value.set(moonSettings.sunDirX, moonSettings.sunDirY, moonSettings.sunDirZ).normalize();
+    moonMaterial.uniforms.uSunIntensity.value = moonSettings.sunLightIntensity;
+    moonMaterial.uniforms.uDarkBrightness.value = moonSettings.darkSideBrightness;
+    moonMaterial.uniforms.uTerminatorHardness.value = moonSettings.terminatorHardness;
   }
 }
 
@@ -1152,6 +1388,14 @@ function createMoonOrbitTrace() {
 function updateMoonPosition() {
   const pos = getMoonPositionAtMET(currentMET);
   moonMesh.position.copy(pos);
+  // Tidal locking: near side always faces Earth
+  // lookAt uses world coordinates, so get Earth's actual world position
+  const earthWorldPos = new THREE.Vector3();
+  earthMesh.getWorldPosition(earthWorldPos);
+  moonMesh.up.set(0, 0, 1);
+  moonMesh.lookAt(earthWorldPos);
+  // SOI ring follows Moon position but stays flat (no rotation inheritance)
+  if (moonSoiRing) moonSoiRing.position.copy(pos);
 }
 
 /* ============================================================
@@ -1181,15 +1425,29 @@ function createStageTicks(stages) {
     if (endPos) endMarker.position.set(endPos.x, endPos.y, endPos.z + 0.05);
     earthMesh.add(endMarker);
 
-    // Sub-stage activity pips — smaller solid circles along trajectory
+    // Sub-stage trajectory tick pips (OTC-1, RTC-1, SOI Exit, etc.)
     const activityPips = [];
     if (stage.ticks && stage.ticks.length > 0) {
       for (const tick of stage.ticks) {
-        const pip = createTickMark(0xaaaaaa, 0.3); // smaller hollow ring, gray
+        const pip = createTickMark(0xaaaaaa, 0.3); // hollow ring, gray
         const pipPos = getOrionFullPosition(tick.metSeconds);
         if (pipPos) pip.position.set(pipPos.x, pipPos.y, pipPos.z + 0.05);
         earthMesh.add(pip);
         activityPips.push(pip);
+      }
+    }
+
+    // Mission activity pips (todos — smaller and more transparent)
+    const todoPips = [];
+    if (stage.activities && stage.activities.length > 0) {
+      for (const activity of stage.activities) {
+        if (activity.met == null) continue;
+        const pip = createTickMark(0x888888, 0.2); // smaller, dimmer
+        pip.material.opacity = 0.4; // more transparent than tick pips
+        const pipPos = getOrionFullPosition(activity.met);
+        if (pipPos) pip.position.set(pipPos.x, pipPos.y, pipPos.z + 0.05);
+        earthMesh.add(pip);
+        todoPips.push(pip);
       }
     }
 
@@ -1201,7 +1459,7 @@ function createStageTicks(stages) {
     label.visible = false;
     earthMesh.add(label);
 
-    return { metStart: stage.metSeconds, metEnd: stage.metEndSeconds, startMarker, endMarker, label, activityPips };
+    return { metStart: stage.metSeconds, metEnd: stage.metEndSeconds, startMarker, endMarker, label, activityPips, todoPips };
   });
 }
 
@@ -1800,6 +2058,7 @@ function setMissionTime(metSeconds, snapEarth = false) {
   }
   updateOrionPosition();
   updateMoonPosition();
+  updateEarthRotation();
   updateTrajectoryColors();
   // If camera lerp is still running, update its destination to follow Orion
   if (camLerp) {
@@ -1873,6 +2132,8 @@ export default {
   flashActivityPip,
   moonSettings,
   applyMoonSettings,
+  earthSettings,
+  applyEarthSettings,
   dispose,
   MISSION_DURATION_SEC,
   GRID_TOTAL,

@@ -1296,6 +1296,7 @@ html, body {
             <button class="track-btn" data-track="free">FREE FLOAT</button>
             <button class="track-btn" id="debugToggleBtn">DEBUG</button>
             <button class="track-btn" id="moonsetBtn" onclick="openMoonsetModal()">MOONSET</button>
+            <button class="track-btn" id="earthsetBtn" onclick="openEarthsetModal()">EARTHSET</button>
           </div>
         </div>
         <div class="hud-chip hud-chip--timer">
@@ -1326,6 +1327,7 @@ html, body {
             <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=m3kR2KK8TEs" target="_blank" rel="noopener"><img src="yt-icon.png" alt="YouTube" class="yt-icon"> NASA Live</a>
             <a class="watch-btn watch-btn--primary" href="https://www.youtube.com/watch?v=6RwfNBtepa4" target="_blank" rel="noopener"><img src="yt-icon.png" alt="YouTube" class="yt-icon"> Orion Live</a>
             <a class="watch-btn watch-btn--primary" href="https://issinfo.net/artemis.html">Super Accurate Position (issinfo.net)</a>
+            <a class="watch-btn watch-btn--primary" href="https://www.nasa.gov/missions/artemis-ii/arow/" target="_blank" rel="noopener">Official NASA Tracker</a>
           </div>
         </div>
       </div>
@@ -1348,7 +1350,7 @@ html, body {
       <p>This app was created by Aaron Harris on April 1st 2026.
 </p>
 <p>After the Artemis II launch, I had some difficulty in finding an at-a-glance and quick-to-open timeline view for Artemis II and its mission path and so this web page app was made to be a simplified illustrative view of the timeline.</p><p>This app is not meant to be highly scientifically accurate, but rather just a general locator of the mission and upcoming events. I did my best to make sure everything lined up for times and scales.</p>
-      <p>The app was created using Claude Code (Opus 4.6) with Codex 5.4 as an "investigator", and deliberately made a monofile (all-in-one) HTML CSS JS page so there were no outside dependencies. One file has it all.</p>
+      <p>The app was created using Claude Code (Opus 4.6) with Codex 5.4 as an "investigator" to build out a basic HTML CSS JS, and recently upgraded as of 4/6/26 to utilize three.js and NASA day/night textures, as well as NASA moon textures.</p>
       <p>Released "as-is" under the MIT License.</p>
       <p class="about-modal-signature">&mdash; Aaron Harris<br><a href="mailto:aaron@harrisxr.com" style="color:var(--accent);text-decoration:underline">aaron@harrisxr.com</a></p>
     </div>
@@ -1371,16 +1373,69 @@ html, body {
 <div class="moonset-modal-overlay" id="moonsetModalOverlay" onclick="closeMoonsetModal()">
   <div class="moonset-modal" onclick="event.stopPropagation()">
     <h3>Moon Lighting Settings</h3>
-    <div class="ms-row"><label>Color (hex)</label><input type="text" id="ms-color" value="cccccc" style="flex:1;background:#0a0a14;color:#fff;border:1px solid rgba(0,127,255,0.2);border-radius:4px;padding:2px 6px;font-family:monospace;font-size:0.9em" oninput="onMoonsetChange()"><span class="ms-val"></span></div>
-    <div class="ms-row"><label>Emissive (hex)</label><input type="text" id="ms-emissive" value="111111" style="flex:1;background:#0a0a14;color:#fff;border:1px solid rgba(0,127,255,0.2);border-radius:4px;padding:2px 6px;font-family:monospace;font-size:0.9em" oninput="onMoonsetChange()"><span class="ms-val"></span></div>
-    <div class="ms-row"><label>Emissive Int.</label><input type="range" id="ms-emissiveInt" min="0" max="1" step="0.01" value="0.05" oninput="onMoonsetChange()"><span class="ms-val" id="ms-emissiveInt-val">0.05</span></div>
-    <div class="ms-row"><label>Shininess</label><input type="range" id="ms-shininess" min="0" max="100" step="1" value="5" oninput="onMoonsetChange()"><span class="ms-val" id="ms-shininess-val">5</span></div>
-    <div class="ms-row"><label>Dark Side</label><input type="range" id="ms-darkSide" min="0" max="0.5" step="0.01" value="0.03" oninput="onMoonsetChange()"><span class="ms-val" id="ms-darkSide-val">0.03</span></div>
-    <div class="ms-row"><label>Sun Intensity</label><input type="range" id="ms-sunInt" min="0" max="5" step="0.1" value="1.8" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunInt-val">1.8</span></div>
+    <div class="ms-row"><label>Dark Side</label><input type="range" id="ms-darkSide" min="0" max="1" step="0.01" value="0.26" oninput="onMoonsetChange()"><span class="ms-val" id="ms-darkSide-val">0.26</span></div>
+    <div class="ms-row"><label>Sun Intensity</label><input type="range" id="ms-sunInt" min="0" max="15" step="0.1" value="1.6" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunInt-val">1.6</span></div>
+    <div class="ms-row"><label>Terminator</label><input type="range" id="ms-terminator" min="1" max="30" step="0.5" value="22" oninput="onMoonsetChange()"><span class="ms-val" id="ms-terminator-val">22.0</span></div>
     <div class="ms-row"><label>Sun Dir X</label><input type="range" id="ms-sunX" min="-1" max="1" step="0.05" value="1.0" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunX-val">1.0</span></div>
-    <div class="ms-row"><label>Sun Dir Y</label><input type="range" id="ms-sunY" min="-1" max="1" step="0.05" value="0.0" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunY-val">0.0</span></div>
+    <div class="ms-row"><label>Sun Dir Y</label><input type="range" id="ms-sunY" min="-1" max="1" step="0.05" value="0.55" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunY-val">0.55</span></div>
     <div class="ms-row"><label>Sun Dir Z</label><input type="range" id="ms-sunZ" min="-1" max="1" step="0.05" value="0.3" oninput="onMoonsetChange()"><span class="ms-val" id="ms-sunZ-val">0.3</span></div>
     <textarea id="moonsetOutput" readonly onclick="this.select()"></textarea>
+  </div>
+</div>
+
+<!-- EARTHSET Debug Modal -->
+<div class="moonset-modal-overlay" id="earthsetModalOverlay" onclick="closeEarthsetModal()">
+  <div class="moonset-modal" onclick="event.stopPropagation()">
+    <h3>Earth Lighting Settings</h3>
+    <div class="ms-row"><label>Dark Side</label><input type="range" id="es-darkSide" min="0" max="1" step="0.01" value="0.43" oninput="onEarthsetChange()"><span class="ms-val" id="es-darkSide-val">0.43</span></div>
+    <div class="ms-row"><label>Sun Intensity</label><input type="range" id="es-sunInt" min="0" max="15" step="0.1" value="1.0" oninput="onEarthsetChange()"><span class="ms-val" id="es-sunInt-val">1.0</span></div>
+    <div class="ms-row"><label>Terminator</label><input type="range" id="es-terminator" min="1" max="30" step="0.5" value="30" oninput="onEarthsetChange()"><span class="ms-val" id="es-terminator-val">30.0</span></div>
+    <div class="ms-row"><label>Night Lights</label><input type="range" id="es-nightInt" min="0" max="5" step="0.1" value="1.9" oninput="onEarthsetChange()"><span class="ms-val" id="es-nightInt-val">1.9</span></div>
+    <div style="margin-top:6px;font-size:0.7em;color:rgba(200,200,208,0.6)">Day Tint RGB</div>
+    <div class="ms-row"><label>Day R</label><input type="range" id="es-dayR" min="0" max="2" step="0.05" value="1.0" oninput="onEarthsetChange()"><span class="ms-val" id="es-dayR-val">1.0</span></div>
+    <div class="ms-row"><label>Day G</label><input type="range" id="es-dayG" min="0" max="2" step="0.05" value="1.0" oninput="onEarthsetChange()"><span class="ms-val" id="es-dayG-val">1.0</span></div>
+    <div class="ms-row"><label>Day B</label><input type="range" id="es-dayB" min="0" max="2" step="0.05" value="1.35" oninput="onEarthsetChange()"><span class="ms-val" id="es-dayB-val">1.35</span></div>
+    <div style="margin-top:6px;font-size:0.7em;color:rgba(200,200,208,0.6)">Night Tint RGB</div>
+    <div class="ms-row"><label>Night R</label><input type="range" id="es-nightR" min="0" max="2" step="0.05" value="1.0" oninput="onEarthsetChange()"><span class="ms-val" id="es-nightR-val">1.0</span></div>
+    <div class="ms-row"><label>Night G</label><input type="range" id="es-nightG" min="0" max="2" step="0.05" value="1.0" oninput="onEarthsetChange()"><span class="ms-val" id="es-nightG-val">1.0</span></div>
+    <div class="ms-row"><label>Night B</label><input type="range" id="es-nightB" min="0" max="2" step="0.05" value="1.3" oninput="onEarthsetChange()"><span class="ms-val" id="es-nightB-val">1.3</span></div>
+    <div style="margin-top:6px;font-size:0.7em;color:rgba(200,200,208,0.6)">Atmosphere</div>
+    <div class="ms-row"><label>Fresnel Int.</label><input type="range" id="es-fresnelInt" min="0" max="3" step="0.05" value="2.1" oninput="onEarthsetChange()"><span class="ms-val" id="es-fresnelInt-val">2.10</span></div>
+    <div class="ms-row"><label>Fresnel Power</label><input type="range" id="es-fresnelPow" min="1" max="10" step="0.5" value="3.5" oninput="onEarthsetChange()"><span class="ms-val" id="es-fresnelPow-val">3.5</span></div>
+    <div class="ms-row"><label>Fresnel Falloff</label><input type="range" id="es-fresnelFall" min="0" max="5" step="0.1" value="1.9" oninput="onEarthsetChange()"><span class="ms-val" id="es-fresnelFall-val">1.9</span></div>
+    <div class="ms-row"><label>Atmos R</label><input type="range" id="es-atmosR" min="0" max="1" step="0.05" value="0.55" oninput="onEarthsetChange()"><span class="ms-val" id="es-atmosR-val">0.55</span></div>
+    <div class="ms-row"><label>Atmos G</label><input type="range" id="es-atmosG" min="0" max="1" step="0.05" value="0.65" oninput="onEarthsetChange()"><span class="ms-val" id="es-atmosG-val">0.65</span></div>
+    <div class="ms-row"><label>Atmos B</label><input type="range" id="es-atmosB" min="0" max="1" step="0.05" value="1.0" oninput="onEarthsetChange()"><span class="ms-val" id="es-atmosB-val">1.0</span></div>
+    <div class="ms-row"><label>Glow Size</label><input type="range" id="es-glowSize" min="1" max="3" step="0.1" value="2.7" oninput="onEarthsetChange()"><span class="ms-val" id="es-glowSize-val">2.7</span></div>
+    <div class="ms-row"><label>Glow Opacity</label><input type="range" id="es-glowOp" min="0" max="1" step="0.05" value="0.45" oninput="onEarthsetChange()"><span class="ms-val" id="es-glowOp-val">0.45</span></div>
+    <div style="margin-top:6px;font-size:0.7em;color:rgba(200,200,208,0.6)">Overall HSV</div>
+    <div class="ms-row"><label>Hue Shift</label><input type="range" id="es-hue" min="-0.5" max="0.5" step="0.01" value="-0.01" oninput="onEarthsetChange()"><span class="ms-val" id="es-hue-val">-0.01</span></div>
+    <div class="ms-row"><label>Saturation</label><input type="range" id="es-sat" min="0" max="2" step="0.05" value="0.8" oninput="onEarthsetChange()"><span class="ms-val" id="es-sat-val">0.80</span></div>
+    <div class="ms-row"><label>Brightness</label><input type="range" id="es-bright" min="0" max="3" step="0.05" value="0.8" oninput="onEarthsetChange()"><span class="ms-val" id="es-bright-val">0.80</span></div>
+    <div style="margin-top:6px;font-size:0.7em;color:rgba(200,200,208,0.6)">Sun Direction</div>
+    <div class="ms-row"><label>Sun Dir X</label><input type="range" id="es-sunX" min="-1" max="1" step="0.05" value="1.0" oninput="onEarthsetChange()"><span class="ms-val" id="es-sunX-val">1.0</span></div>
+    <div class="ms-row"><label>Sun Dir Y</label><input type="range" id="es-sunY" min="-1" max="1" step="0.05" value="0.55" oninput="onEarthsetChange()"><span class="ms-val" id="es-sunY-val">0.55</span></div>
+    <div class="ms-row"><label>Sun Dir Z</label><input type="range" id="es-sunZ" min="-1" max="1" step="0.05" value="0.3" oninput="onEarthsetChange()"><span class="ms-val" id="es-sunZ-val">0.3</span></div>
+    <div style="margin-top:8px;font-size:0.75em;color:rgba(200,200,208,0.8)">Mesh Rotation (90° steps)</div>
+    <div class="ms-row">
+      <label>Rot X</label>
+      <button onclick="earthRotStep('X',-1)" style="padding:2px 8px;cursor:pointer">-90</button>
+      <span class="ms-val" id="es-rotX-val" style="flex:1;text-align:center">0</span>
+      <button onclick="earthRotStep('X',1)" style="padding:2px 8px;cursor:pointer">+90</button>
+    </div>
+    <div class="ms-row">
+      <label>Rot Y</label>
+      <button onclick="earthRotStep('Y',-1)" style="padding:2px 8px;cursor:pointer">-90</button>
+      <span class="ms-val" id="es-rotY-val" style="flex:1;text-align:center">0</span>
+      <button onclick="earthRotStep('Y',1)" style="padding:2px 8px;cursor:pointer">+90</button>
+    </div>
+    <div class="ms-row">
+      <label>Rot Z</label>
+      <button onclick="earthRotStep('Z',-1)" style="padding:2px 8px;cursor:pointer">-90</button>
+      <span class="ms-val" id="es-rotZ-val" style="flex:1;text-align:center">0</span>
+      <button onclick="earthRotStep('Z',1)" style="padding:2px 8px;cursor:pointer">+90</button>
+    </div>
+    <textarea id="earthsetOutput" readonly onclick="this.select()"></textarea>
   </div>
 </div>
 
@@ -1406,20 +1461,20 @@ function getEffectiveNow() {
 function met(d, h, m, s) { return d * 86400 + h * 3600 + m * 60 + s; }
 
 // ===== STAGE BOUNDARIES (MET seconds) =====
-// Sources: Live blog actuals (ascent), April 1 PDF (post-ascent)
+// Sources: NASA Press Kit, live blog actuals, flight-day updates
 
 const MET_LAUNCH_START           = met(0,  0,  0,  0);   // 0/00:00:00  Liftoff
-const MET_ICPS_BURNS_START       = met(0,  0, 50,  0);   // 0/00:50:00  PRM
-const MET_PROX_OPS_START         = met(0,  3, 23,  0);   // 0/03:23:00  Orion/ICPS separation
-const MET_HEO_CHECKOUTS_START    = met(0, 13, 30,  0);   // 0/13:30:00  Orion PRB (approx)
+const MET_ICPS_BURNS_START       = met(0,  0, 49,  0);   // 0/00:49:00  PRM (Press Kit +49:00)
+const MET_PROX_OPS_START         = met(0,  3, 24, 15);   // 0/03:24:15  Orion/ICPS separation (Press Kit +03:24:15)
+const MET_HEO_CHECKOUTS_START    = met(0, 13, 44,  0);   // 0/13:44:00  Orion PRB (Press Kit +0/13:44)
 const MET_TLI_START              = met(1,  1, 14,  0);   // 1/01:14:00  TLI burn (NASA confirmed 7:49 PM EDT Apr 2)
 const MET_OUTBOUND_START         = met(1,  6,  0,  0);   // ~1/06:00:00 Post-TLI coast begins
-const MET_LUNAR_FLYBY_START      = met(5,  0, 29, 59);   // 5/00:29:59  Lunar close approach
-const MET_RETURN_COAST_START     = met(5, 18, 53,  0);   // 5/18:53:00  Lunar SOI exit
-const MET_CM_SM_SEP_START        = met(9,  1,  9,  0);   // 9/01:09:00  CM/SM separation
-const MET_REENTRY_START          = met(9,  1, 29,  0);   // 9/01:29:00  Entry interface
-const MET_SPLASHDOWN_START       = met(9,  1, 42, 48);   // 9/01:42:48  Splashdown
-const MET_MISSION_END            = met(9,  2,  1,  0);   // 9/02:01:00  Orion final power down
+const MET_LUNAR_FLYBY_START      = met(4, 22,  0,  0);   // 4/22:00:00  Lunar flyby observation begins (Press Kit +04/22:00)
+const MET_RETURN_COAST_START     = met(5, 19, 47,  0);   // 5/19:47:00  Lunar SOI exit (Press Kit +5/19:47)
+const MET_CM_SM_SEP_START        = met(9,  1, 13,  0);   // 9/01:13:00  CM/SM separation (Press Kit +9/01:13)
+const MET_REENTRY_START          = met(9,  1, 33,  0);   // 9/01:33:00  Entry interface (Press Kit +9/01:33)
+const MET_SPLASHDOWN_START       = met(9,  1, 46,  0);   // 9/01:46:00  Splashdown (Press Kit +9/01:46)
+const MET_MISSION_END            = met(9,  2,  5,  0);   // 9/02:05:00  Orion final power down
 
 // ===== ASCENT TICK MARKS (live blog actuals) =====
 const TICK_TOWER_CLEAR  = met(0, 0, 0,  7);
@@ -1430,25 +1485,27 @@ const TICK_LAS_JETTISON = met(0, 0, 3, 13);
 const TICK_MECO         = met(0, 0, 8,  2);
 const TICK_CORE_SEP     = met(0, 0, 8, 14);
 
-// ===== ICPS BURNS TICKS (April 1 PDF) =====
-const TICK_PRM          = met(0, 0, 50, 0);
-const TICK_ARB_TIG      = met(0, 1, 47, 0);
+// ===== ICPS BURNS TICKS =====
+const TICK_PRM          = met(0, 0, 49, 0);   // Press Kit +49:00
+const TICK_ARB_TIG      = met(0, 1, 47, 57);  // Press Kit +01:47:57
 
-// ===== EARTH-MOON TRAJECTORY TICKS (April 1 PDF) =====
+// ===== EARTH-MOON TRAJECTORY TICKS =====
 const TICK_TLI          = met(1,  1, 14,  0);
-const TICK_OTC1         = met(2,  1,  8, 42);
-const TICK_OTC2         = met(3,  1,  8, 42);
-const TICK_OTC3         = met(4,  4, 29, 52);
-const TICK_LUNAR_SOI    = met(4,  6, 38,  0);
-const TICK_CLOSEST      = met(5,  0, 29, 59);
-const TICK_MAX_EARTH    = met(5,  0, 35,  0);
-const TICK_SOI_EXIT     = met(5, 18, 53,  0);
-const TICK_RTC1         = met(6,  1, 29, 52);
-const TICK_RTC2         = met(8,  4, 29, 10);
-const TICK_RTC3         = met(8, 20, 29, 10);
-const TICK_CM_SM_SEP    = met(9,  1,  9,  0);
-const TICK_ENTRY_IF     = met(9,  1, 29,  0);
-const TICK_SPLASHDOWN   = met(9,  1, 42, 48);
+const TICK_OTC1         = met(2,  1,  8, 42);  // canceled
+const TICK_OTC2         = met(3,  1,  8, 42);  // canceled (NASA FD4 update)
+const TICK_OTC3         = met(4,  4, 28,  0);  // FD5 update: 11:03 PM EDT → ~+4/04:28
+const TICK_LUNAR_SOI    = met(4,  6,  2,  0);  // FD6 update: 12:37 AM EDT → ~+4/06:02
+const TICK_LOS          = met(5,  0,  9,  0);  // FD6 update: LOS ~6:44 PM EDT → ~+5/00:09
+const TICK_CLOSEST      = met(5,  0, 25,  0);  // FD6 live update: 7:00 PM EDT → +5/00:25
+const TICK_MAX_EARTH    = met(5,  0, 27,  0);  // FD6 live update: 7:02 PM EDT → +5/00:27
+const TICK_AOS          = met(5,  0, 50,  0);  // FD6 update: AOS ~7:25 PM EDT → ~+5/00:50
+const TICK_SOI_EXIT     = met(5, 19, 47,  0);  // Press Kit +5/19:47
+const TICK_RTC1         = met(6,  4, 23,  0);  // Press Kit +6/04:23
+const TICK_RTC2         = met(8,  4, 33,  0);  // Press Kit +8/04:33
+const TICK_RTC3         = met(8, 20, 33,  0);  // Press Kit +8/20:33
+const TICK_CM_SM_SEP    = met(9,  1, 13,  0);  // Press Kit +9/01:13
+const TICK_ENTRY_IF     = met(9,  1, 33,  0);  // Press Kit +9/01:33
+const TICK_SPLASHDOWN   = met(9,  1, 46,  0);  // Press Kit +9/01:46
 
 
 /* ============================================================
@@ -1468,7 +1525,7 @@ const STAGES = [
       { text: 'Launch abort system jettison', met: met(0,0,3,13), label: 'T+3m 13s' },
       { text: 'Core stage main engine cutoff', met: met(0,0,8,2), label: 'T+8m 02s' },
       { text: 'Core stage separation from ICPS', met: met(0,0,8,14), label: 'T+8m 14s' },
-      { text: 'Solar array wings deployment', met: met(0,0,20,0), label: '~T+20m' }
+      { text: 'Solar array wings deployment', met: met(0,0,24,0), label: '~T+24m' }
     ],
 
     isKeyMilestone: false,
@@ -1502,8 +1559,8 @@ const STAGES = [
     metEndSeconds: MET_PROX_OPS_START,
     description: 'The Interim Cryogenic Propulsion Stage performs two critical burns: the Perigee Raise Maneuver (PRM) and the Apogee Raise Burn (ARB). These raise Orion from its initial low orbit into a high elliptical Earth orbit with an apogee of ~43,500 miles.',
     activities: [
-      { text: 'ICPS Perigee Raise Maneuver (PRM)', met: met(0,0,50,0), label: 'T+50m' },
-      { text: 'ICPS Apogee Raise Burn (ARB)', met: met(0,1,47,0), label: 'T+1h 47m' },
+      { text: 'ICPS Perigee Raise Maneuver (PRM)', met: met(0,0,49,0), label: 'T+49m' },
+      { text: 'ICPS Apogee Raise Burn (ARB)', met: met(0,1,47,57), label: 'T+1h 48m' },
 
     ],
 
@@ -1533,7 +1590,7 @@ const STAGES = [
     metEndSeconds: MET_HEO_CHECKOUTS_START,
     description: 'Orion separates from the ICPS upper stage, then the crew manually pilots the spacecraft to approach, station-keep, and back away — testing future docking capabilities using cameras and windows. The ICPS is later disposed.',
     activities: [
-      { text: 'Orion/ICPS spring separation', met: met(0,3,23,0), label: 'T+3h 23m' },
+      { text: 'Orion/ICPS spring separation', met: met(0,3,24,15), label: 'T+3h 24m' },
 
       { text: 'Proximity operations conclude', met: met(0,4,35,0), label: '~T+4h 35m' },
       { text: 'ICPS disposal burn', met: met(0,5,2,0), label: 'T+5h 02m' },
@@ -1566,7 +1623,7 @@ const STAGES = [
 
       { text: 'Deep Space Network emergency comms test', met: met(0,10,6,0), label: '~T+10h 06m' },
 
-      { text: 'Pre-TLI geometry burn (Orion PRB)', met: met(0,13,30,0), label: 'T+13h 30m' },
+      { text: 'Pre-TLI geometry burn (Orion PRB)', met: met(0,13,44,0), label: 'T+13h 44m' },
       { text: 'Optical navigation checkout', met: met(0,14,15,0), label: 'T+14h 15m' },
 
     ],
@@ -1619,19 +1676,21 @@ const STAGES = [
     metEndSeconds: MET_LUNAR_FLYBY_START,
     description: 'A ~4-day coast toward the Moon with three outbound trajectory correction burns to refine the path. The crew conducts medical demonstrations, suit checks, media events, lunar observation rehearsals, and enters the lunar sphere of influence on Flight Day 5.',
     activities: [
-      { text: 'OTC-1: first outbound correction (FD3) (Canceled)', met: met(2,1,8,42), canceled: true },
+      { text: 'OTC-1: first outbound correction (FD3)', met: met(2,1,8,42), canceled: true },
 
-      { text: 'OTC-2: second outbound correction (FD4)', met: met(3,1,8,42), label: 'T+73h 08m' },
+      { text: 'OTC-2: second outbound correction (FD4)', met: met(3,1,8,42), canceled: true },
 
-      { text: 'OTC-3: final outbound correction (FD5)', met: met(4,4,29,52), label: 'T+100h 30m' },
+      { text: 'Manual piloting demonstration (FD4)', met: met(3,2,34,0), label: 'T+74h 34m' },
 
-      { text: 'Entry into lunar sphere of influence', met: met(4,6,38,0), label: 'T+102h 38m' }
+      { text: 'OTC-3: final outbound correction (FD5)', met: met(4,4,28,0), label: 'T+100h 28m' },
+
+      { text: 'Entry into lunar sphere of influence', met: met(4,6,2,0), label: 'T+102h 02m' }
     ],
 
     isKeyMilestone: false,
     keyStats: [
       { label: 'Duration', value: '~4 days' },
-      { label: 'Corrections', value: '3 burns (OTC 1-3)' }
+      { label: 'Corrections', value: '1 of 3 burns (OTC-1, OTC-2 canceled)' }
     ],
     orbitParams: null,
 
@@ -1649,11 +1708,13 @@ const STAGES = [
     flightDay: 'Flight Day 6',
     metSeconds: MET_LUNAR_FLYBY_START,
     metEndSeconds: MET_RETURN_COAST_START,
-    description: 'Orion flies within 4,000–6,500 miles of the Moon\'s far side — the farthest humans have ever traveled from Earth at 250,000+ miles. The crew photographs lunar geological features, observes Earthrise, and experiences 30–50 minutes of radio blackout behind the Moon.',
+    description: 'Orion flies within 4,000–6,500 miles of the Moon\'s far side — the farthest humans have ever traveled from Earth at 250,000+ miles. The crew photographs lunar geological features, observes Earthrise, and experiences ~40 minutes of radio blackout behind the Moon.',
     activities: [
-      { text: 'Lunar close approach: ~4,000–6,500 mi from surface', met: met(5,0,29,59), label: 'T+120h 30m' },
-      { text: 'Maximum Earth distance: 250,000+ mi', met: met(5,0,35,0), label: 'T+120h 35m' },
-
+      { text: 'Lunar flyby observation begins', met: met(4,22,0,0), label: 'T+118h' },
+      { text: 'Loss of Signal (behind Moon)', met: met(5,0,9,0), label: '~T+120h 09m' },
+      { text: 'Lunar close approach: ~4,000–6,500 mi from surface', met: met(5,0,25,0), label: 'T+120h 25m' },
+      { text: 'Maximum Earth distance: 250,000+ mi', met: met(5,0,27,0), label: 'T+120h 27m' },
+      { text: 'Acquisition of Signal (comms restored)', met: met(5,0,50,0), label: '~T+120h 50m' },
     ],
 
     isKeyMilestone: true,
@@ -1664,8 +1725,10 @@ const STAGES = [
     orbitParams: null,
 
     ticks: [
+      { metSeconds: TICK_LOS,       label: 'LOS',            t: 0.20 },
       { metSeconds: TICK_CLOSEST,   label: 'Closest',        t: 0.50 },
-      { metSeconds: TICK_MAX_EARTH, label: 'Max Earth Dist',  t: 0.50 }
+      { metSeconds: TICK_MAX_EARTH, label: 'Max Earth Dist', t: 0.52 },
+      { metSeconds: TICK_AOS,       label: 'AOS',            t: 0.60 }
     ]
   },
   {
@@ -1677,15 +1740,13 @@ const STAGES = [
     metEndSeconds: MET_CM_SM_SEP_START,
     description: 'A ~4-day return journey with three correction burns. The crew builds a radiation shelter demonstration, performs manual piloting tests, conducts reentry preparation, physiological studies, and garment assessments for post-landing orthostatic intolerance.',
     activities: [
-      { text: 'Lunar SOI exit (FD7 morning)', met: met(5,18,53,0), label: 'T+138h 53m' },
-
-      { text: 'RTC-1: first return correction (FD7)', met: met(6,1,29,52), label: 'T+145h 30m' },
+      { text: 'Lunar SOI exit (FD7)', met: met(5,19,47,0), label: 'T+139h 47m' },
+      { text: 'RTC-1: first return correction (FD7)', met: met(6,4,23,0), label: 'T+148h 23m' },
       { text: 'Radiation shelter construction demo (FD8)', met: met(7,1,50,0), label: 'T+169h 50m' },
       { text: 'Manual piloting demonstrations (FD8)', met: met(7,4,20,0), label: 'T+172h 20m' },
-      { text: 'RTC-2: second return correction (FD9)', met: met(8,4,29,10), label: 'T+196h 29m' },
-      { text: 'Orthostatic intolerance garment assessments', met: met(7,23,15,0), label: 'T+191h 15m' },
-
-      { text: 'RTC-3: final return correction (FD10)', met: met(8,20,29,10), label: 'T+212h 29m' },
+      { text: 'Orthostatic intolerance garment assessments (FD8–9)', met: met(7,23,15,0), label: 'T+191h 15m' },
+      { text: 'RTC-2: second return correction (FD9)', met: met(8,4,33,0), label: 'T+196h 33m' },
+      { text: 'RTC-3: final return correction (FD10)', met: met(8,20,33,0), label: 'T+212h 33m' },
       { text: 'Entry checklist and spacesuit donning begins', met: met(8,22,30,0), label: 'T+214h 30m' }
     ],
 
@@ -1712,9 +1773,9 @@ const STAGES = [
     metEndSeconds: MET_REENTRY_START,
     description: 'Approximately 20 minutes before reentry, the Orion Crew Module separates from the European Service Module, which is disposed of. A final small burn adjusts the reentry angle for precise atmospheric entry.',
     activities: [
-      { text: 'CM/SM separation', met: met(9,1,9,0), label: 'T+217h 09m' },
+      { text: 'CM/SM separation', met: met(9,1,13,0), label: 'T+217h 13m' },
 
-      { text: 'Crew module raise burn to adjust reentry angle', met: met(9,1,16,0), label: 'T+217h 16m' },
+      { text: 'Crew module raise burn to adjust reentry angle', met: met(9,1,20,0), label: 'T+217h 20m' },
 
     ],
 
@@ -1738,7 +1799,7 @@ const STAGES = [
     metEndSeconds: MET_SPLASHDOWN_START,
     description: 'Orion\'s Crew Module enters Earth\'s atmosphere at approximately 25,000 mph. The heat shield endures temperatures of ~5,000°F during roughly 10 minutes of plasma blackout before parachute deployment slows the capsule for splashdown.',
     activities: [
-      { text: 'Entry interface at ~400,000 ft altitude', met: met(9,1,29,0), label: 'T+217h 29m' },
+      { text: 'Entry interface at ~400,000 ft altitude', met: met(9,1,33,0), label: 'T+217h 33m' },
 
     ],
 
@@ -1762,7 +1823,7 @@ const STAGES = [
     metEndSeconds: MET_MISSION_END,
     description: 'Orion splashes down in the Pacific Ocean off San Diego, California at approximately 17 mph under three main parachutes. U.S. Navy recovery teams retrieve the crew and capsule, completing the first crewed Artemis mission.',
     activities: [
-      { text: 'Splashdown in Pacific Ocean off San Diego, CA', met: met(9,1,42,48), label: 'T+217h 43m' },
+      { text: 'Splashdown in Pacific Ocean off San Diego, CA', met: met(9,1,46,0), label: 'T+217h 46m' },
 
       { text: 'Crew module RCS safing', met: met(9,1,53,0), label: 'T+217h 53m' },
       { text: 'Orion final power down', met: met(9,2,1,0), label: 'T+218h 01m' }
@@ -2484,24 +2545,18 @@ function onMoonsetChange() {
   if (!window._artemisScene) return;
   const s = window._artemisScene.moonSettings;
 
-  // Read values from sliders/inputs
-  const colorHex = document.getElementById('ms-color').value.replace('#', '');
-  const emissiveHex = document.getElementById('ms-emissive').value.replace('#', '');
-  s.color = parseInt(colorHex, 16) || 0xcccccc;
-  s.emissive = parseInt(emissiveHex, 16) || 0x111111;
-  s.emissiveIntensity = parseFloat(document.getElementById('ms-emissiveInt').value);
-  s.shininess = parseFloat(document.getElementById('ms-shininess').value);
+  // Read values from sliders
   s.darkSideBrightness = parseFloat(document.getElementById('ms-darkSide').value);
   s.sunLightIntensity = parseFloat(document.getElementById('ms-sunInt').value);
+  s.terminatorHardness = parseFloat(document.getElementById('ms-terminator').value);
   s.sunDirX = parseFloat(document.getElementById('ms-sunX').value);
   s.sunDirY = parseFloat(document.getElementById('ms-sunY').value);
   s.sunDirZ = parseFloat(document.getElementById('ms-sunZ').value);
 
   // Update value displays
-  document.getElementById('ms-emissiveInt-val').textContent = s.emissiveIntensity.toFixed(2);
-  document.getElementById('ms-shininess-val').textContent = s.shininess.toFixed(0);
   document.getElementById('ms-darkSide-val').textContent = s.darkSideBrightness.toFixed(2);
   document.getElementById('ms-sunInt-val').textContent = s.sunLightIntensity.toFixed(1);
+  document.getElementById('ms-terminator-val').textContent = s.terminatorHardness.toFixed(1);
   document.getElementById('ms-sunX-val').textContent = s.sunDirX.toFixed(2);
   document.getElementById('ms-sunY-val').textContent = s.sunDirY.toFixed(2);
   document.getElementById('ms-sunZ-val').textContent = s.sunDirZ.toFixed(2);
@@ -2517,12 +2572,9 @@ function updateMoonsetOutput() {
   if (!window._artemisScene) return;
   const s = window._artemisScene.moonSettings;
   const json = JSON.stringify({
-    color: '0x' + s.color.toString(16).padStart(6, '0'),
-    emissive: '0x' + s.emissive.toString(16).padStart(6, '0'),
-    emissiveIntensity: s.emissiveIntensity,
-    shininess: s.shininess,
     darkSideBrightness: s.darkSideBrightness,
     sunLightIntensity: s.sunLightIntensity,
+    terminatorHardness: s.terminatorHardness,
     sunDirX: s.sunDirX,
     sunDirY: s.sunDirY,
     sunDirZ: s.sunDirZ
@@ -2530,18 +2582,124 @@ function updateMoonsetOutput() {
   document.getElementById('moonsetOutput').value = json;
 }
 
+// --- EARTHSET Debug Modal ---
+function openEarthsetModal() {
+  document.getElementById('earthsetModalOverlay').classList.add('open');
+  updateEarthsetOutput();
+}
+
+function closeEarthsetModal() {
+  document.getElementById('earthsetModalOverlay').classList.remove('open');
+}
+
+function earthRotStep(axis, dir) {
+  if (!window._artemisScene) return;
+  const s = window._artemisScene.earthSettings;
+  const step = dir * (Math.PI / 2); // 90 degrees
+  const key = 'meshRot' + axis;
+  s[key] += step;
+  // Update display (show in degrees)
+  document.getElementById('es-rot' + axis + '-val').textContent = Math.round(s[key] * 180 / Math.PI) + '°';
+  updateEarthsetOutput();
+}
+
+function onEarthsetChange() {
+  if (!window._artemisScene) return;
+  const s = window._artemisScene.earthSettings;
+
+  s.darkSideBrightness = parseFloat(document.getElementById('es-darkSide').value);
+  s.sunLightIntensity = parseFloat(document.getElementById('es-sunInt').value);
+  s.terminatorHardness = parseFloat(document.getElementById('es-terminator').value);
+  s.nightIntensity = parseFloat(document.getElementById('es-nightInt').value);
+  s.dayTintR = parseFloat(document.getElementById('es-dayR').value);
+  s.dayTintG = parseFloat(document.getElementById('es-dayG').value);
+  s.dayTintB = parseFloat(document.getElementById('es-dayB').value);
+  s.nightTintR = parseFloat(document.getElementById('es-nightR').value);
+  s.nightTintG = parseFloat(document.getElementById('es-nightG').value);
+  s.nightTintB = parseFloat(document.getElementById('es-nightB').value);
+  s.fresnelIntensity = parseFloat(document.getElementById('es-fresnelInt').value);
+  s.fresnelPower = parseFloat(document.getElementById('es-fresnelPow').value);
+  s.fresnelFalloff = parseFloat(document.getElementById('es-fresnelFall').value);
+  s.atmosColorR = parseFloat(document.getElementById('es-atmosR').value);
+  s.atmosColorG = parseFloat(document.getElementById('es-atmosG').value);
+  s.atmosColorB = parseFloat(document.getElementById('es-atmosB').value);
+  s.glowSize = parseFloat(document.getElementById('es-glowSize').value);
+  s.glowOpacity = parseFloat(document.getElementById('es-glowOp').value);
+  s.hueShift = parseFloat(document.getElementById('es-hue').value);
+  s.saturation = parseFloat(document.getElementById('es-sat').value);
+  s.brightness = parseFloat(document.getElementById('es-bright').value);
+  s.sunDirX = parseFloat(document.getElementById('es-sunX').value);
+  s.sunDirY = parseFloat(document.getElementById('es-sunY').value);
+  s.sunDirZ = parseFloat(document.getElementById('es-sunZ').value);
+
+  document.getElementById('es-darkSide-val').textContent = s.darkSideBrightness.toFixed(2);
+  document.getElementById('es-sunInt-val').textContent = s.sunLightIntensity.toFixed(1);
+  document.getElementById('es-terminator-val').textContent = s.terminatorHardness.toFixed(1);
+  document.getElementById('es-nightInt-val').textContent = s.nightIntensity.toFixed(1);
+  document.getElementById('es-dayR-val').textContent = s.dayTintR.toFixed(2);
+  document.getElementById('es-dayG-val').textContent = s.dayTintG.toFixed(2);
+  document.getElementById('es-dayB-val').textContent = s.dayTintB.toFixed(2);
+  document.getElementById('es-nightR-val').textContent = s.nightTintR.toFixed(2);
+  document.getElementById('es-nightG-val').textContent = s.nightTintG.toFixed(2);
+  document.getElementById('es-nightB-val').textContent = s.nightTintB.toFixed(2);
+  document.getElementById('es-fresnelInt-val').textContent = s.fresnelIntensity.toFixed(2);
+  document.getElementById('es-fresnelPow-val').textContent = s.fresnelPower.toFixed(1);
+  document.getElementById('es-fresnelFall-val').textContent = s.fresnelFalloff.toFixed(1);
+  document.getElementById('es-atmosR-val').textContent = s.atmosColorR.toFixed(2);
+  document.getElementById('es-atmosG-val').textContent = s.atmosColorG.toFixed(2);
+  document.getElementById('es-atmosB-val').textContent = s.atmosColorB.toFixed(2);
+  document.getElementById('es-glowSize-val').textContent = s.glowSize.toFixed(1);
+  document.getElementById('es-glowOp-val').textContent = s.glowOpacity.toFixed(2);
+  document.getElementById('es-hue-val').textContent = s.hueShift.toFixed(2);
+  document.getElementById('es-sat-val').textContent = s.saturation.toFixed(2);
+  document.getElementById('es-bright-val').textContent = s.brightness.toFixed(2);
+  document.getElementById('es-sunX-val').textContent = s.sunDirX.toFixed(2);
+  document.getElementById('es-sunY-val').textContent = s.sunDirY.toFixed(2);
+  document.getElementById('es-sunZ-val').textContent = s.sunDirZ.toFixed(2);
+
+  window._artemisScene.applyEarthSettings();
+  updateEarthsetOutput();
+}
+
+function updateEarthsetOutput() {
+  if (!window._artemisScene) return;
+  const s = window._artemisScene.earthSettings;
+  const json = JSON.stringify({
+    darkSideBrightness: s.darkSideBrightness,
+    sunLightIntensity: s.sunLightIntensity,
+    terminatorHardness: s.terminatorHardness,
+    nightIntensity: s.nightIntensity,
+    dayTint: [s.dayTintR, s.dayTintG, s.dayTintB],
+    nightTint: [s.nightTintR, s.nightTintG, s.nightTintB],
+    fresnelIntensity: s.fresnelIntensity,
+    fresnelPower: s.fresnelPower,
+    fresnelFalloff: s.fresnelFalloff,
+    atmosColor: [s.atmosColorR, s.atmosColorG, s.atmosColorB],
+    glowSize: s.glowSize,
+    glowOpacity: s.glowOpacity,
+    hueShift: s.hueShift,
+    saturation: s.saturation,
+    brightness: s.brightness,
+    sunDir: [s.sunDirX, s.sunDirY, s.sunDirZ],
+    meshRot_deg: [Math.round(s.meshRotX * 180 / Math.PI), Math.round(s.meshRotY * 180 / Math.PI), Math.round(s.meshRotZ * 180 / Math.PI)]
+  }, null, 2);
+  document.getElementById('earthsetOutput').value = json;
+}
+
 /* ============================================================
    RENDER STRUCTURED ACTIVITIES
    ============================================================ */
 function renderActivities(activities, stageState) {
   if (!activities || activities.length === 0) return '<p>No activities listed.</p>';
+  // Sort activities by MET to prevent source-order mistakes from leaking into UI
+  const sorted = [...activities].sort((a, b) => (a.met || 0) - (b.met || 0));
   // Always use real time — show actual completion/countdown state regardless of scrubber
   const now = Date.now();
   const missionElapsed = (now - T0.getTime()) / 1000;
 
   const stageColorClass = stageState === 'current' ? 'stage-current' : stageState === 'past' ? 'stage-past' : 'stage-future';
 
-  return '<ul class="todo-list ' + stageColorClass + '">' + activities.map(a => {
+  return '<ul class="todo-list ' + stageColorClass + '">' + sorted.map(a => {
     if (a.met == null) return '';
     const isPast = missionElapsed >= a.met;
     const safeText = (a.text || '').replace(/'/g, '&#39;');

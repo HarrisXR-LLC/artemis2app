@@ -865,7 +865,7 @@ function getOrionPositionAtMET(metSec) {
 }
 
 // Mission end MET (splashdown): 9d 01:42:48 = 783768 seconds
-const MISSION_END_MET = 9 * 86400 + 1 * 3600 + 42 * 60 + 48;
+const MISSION_END_MET = 9 * 86400 + 1 * 3600 + 46 * 60; // 9d 01:46:00 — Press Kit splashdown
 
 /**
  * Get Orion's Earth-relative position at any MET, including connector segments.
