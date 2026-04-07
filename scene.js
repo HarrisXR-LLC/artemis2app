@@ -1796,7 +1796,7 @@ function setupControls() {
     e.preventDefault();
     camLerp = null;
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
-    targetZoomLevel = Math.max(0.5, Math.min(420, targetZoomLevel * factor));
+    targetZoomLevel = Math.max(0.5, Math.min(1500, targetZoomLevel * factor));
   }, { passive: false });
 
   // Touch pan + pinch zoom
@@ -1845,7 +1845,7 @@ function setupControls() {
       const dy = e.touches[1].clientY - e.touches[0].clientY;
       const dist = Math.sqrt(dx * dx + dy * dy);
       // Pinch sets both target and actual for responsive feel
-      const newZoom = Math.max(0.5, Math.min(420, touchStartZoom * (dist / touchStartDist)));
+      const newZoom = Math.max(0.5, Math.min(1500, touchStartZoom * (dist / touchStartDist)));
       targetZoomLevel = newZoom;
       zoomLevel = newZoom; // direct for pinch responsiveness
       clampCameraTarget();
